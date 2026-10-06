@@ -1,4 +1,4 @@
-# 🌳 Estruturas de Dados em Árvore: BST, AVL e Rubro-Negra
+n# 🌳 Estruturas de Dados em Árvore: BST, AVL e Rubro-Negra
 
 > Projeto da disciplina de **Estrutura de Dados** que implementa e compara árvores binárias de busca e árvores balanceadas usando conjuntos de dados reais.
 
@@ -231,9 +231,9 @@ pytest tests/
 
 | Nome | GitHub | Responsabilidade |
 |------|--------|------------------|
-| Nome do Integrante 1 | [@usuario1](https://github.com/usuario1) | BST e leitura de dados |
-| Nome do Integrante 2 | [@usuario2](https://github.com/usuario2) | AVL e benchmarks |
-| Nome do Integrante 3 | [@usuario3](https://github.com/usuario3) | Rubro-Negra e relatório |
+| Henrique Balassa | [@henriquebalassa](https://github.com/henriquebalassa) | BST e leitura de dados |
+| Laura Veiga      | [@usuario2](https://github.com/usuario2) | AVL e benchmarks |
+| Saulo Resende    | [@gitsasa123](https://github.com/gitsasa123) | Rubro-Negra e relatório |
 
 **Disciplina:** Estrutura de Dados
 **Professor(a):** Nome do Professor
