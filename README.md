@@ -232,7 +232,7 @@ pytest tests/
 | Nome | GitHub | Responsabilidade |
 |------|--------|------------------|
 | Henrique Balassa | [@henriquebalassa](https://github.com/henriquebalassa) | BST e leitura de dados |
-| Laura Veiga      | [@usuario2](https://github.com/usuario2) | AVL e benchmarks |
+| Laura Veiga      | [@Lauraveigaa](https://github.com/Lauraveigaa) | AVL e benchmarks |
 | Saulo Resende    | [@gitsasa123](https://github.com/gitsasa123) | Rubro-Negra e relatório |
 
 **Disciplina:** Estrutura de Dados
