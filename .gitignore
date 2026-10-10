@@ -1,0 +1,14 @@
+# classes compiladas
+out/
+*.class
+
+# dados originais do FMA (342 MiB): baixe com o comando do README
+data/fma_metadata.zip
+data/fma_metadata/
+
+# Python
+__pycache__/
+
+# editores
+.idea/
+.vscode/
