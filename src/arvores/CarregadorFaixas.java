@@ -10,10 +10,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-/**
- * Lê o CSV limpo (data/faixas.csv) gerado por scripts/preparar_dados.py.
- * Formato: chave,titulo,artista,genero,ouvintes,duracao  (uma faixa por linha).
- */
 public final class CarregadorFaixas {
 
     public record Registro(int chave, Faixa dados) {
@@ -22,12 +18,7 @@ public final class CarregadorFaixas {
     private CarregadorFaixas() {
     }
 
-    /**
-     * @param limite    quantas faixas ler (as primeiras, na ordem do arquivo); 0 ou negativo = todas
-     * @param embaralhar true = ordem aleatória (caso médio); false = ordem do arquivo,
-     *                   que é crescente por track_id (pior caso da BST)
-     * @param seed      semente do embaralhamento (fixa = resultados reproduzíveis)
-     */
+  
     public static List<Registro> carregar(Path caminho, int limite, boolean embaralhar, long seed)
             throws IOException {
         List<Registro> registros = new ArrayList<>();
@@ -53,7 +44,6 @@ public final class CarregadorFaixas {
         return registros;
     }
 
-    /** Divide uma linha CSV respeitando aspas ("a,b" é um campo só; "" dentro de aspas vira "). */
     static List<String> dividirLinhaCsv(String linha) {
         List<String> campos = new ArrayList<>();
         StringBuilder atual = new StringBuilder();
