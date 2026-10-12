@@ -3,22 +3,7 @@ package arvores;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Árvore Rubro-Negra (também chamada Vermelho-Preto), seguindo o livro do Cormen (CLRS, cap. 13).
- *
- * É uma BST em que cada nó tem uma cor e valem 5 regras:
- *   1. Todo nó é vermelho ou preto.
- *   2. A raiz é preta.
- *   3. As folhas vazias (NIL) são pretas.
- *   4. Um nó vermelho só tem filhos pretos (nunca dois vermelhos seguidos).
- *   5. Todos os caminhos de um nó até suas folhas NIL têm o mesmo número de nós pretos.
- * Dessas regras sai que o caminho mais longo é no máximo 2x o mais curto: altura <= 2*log2(n+1).
- * É menos rigorosa que a AVL, então costuma fazer menos rotações em inserção e remoção.
- *
- * Detalhes de implementação (iguais ao Cormen):
- *  - em vez de 'null', usamos UM nó sentinela NIL (preto) compartilhado por todas as folhas;
- *  - cada nó guarda o PAI, porque o conserto sobe a árvore.
- */
+
 public class RubroNegra<K extends Comparable<K>, V> implements Arvore<K, V> {
 
     private static final boolean VERMELHO = true;
@@ -51,17 +36,7 @@ public class RubroNegra<K extends Comparable<K>, V> implements Arvore<K, V> {
         return a.compareTo(b);
     }
 
-    // ------------------------------------------------------------------ rotações
-
-    /**
-     * Rotação à esquerda em torno de x (o filho direito y sobe, x desce para a esquerda de y):
-     *
-     *      x                  y
-     *     / \                / \
-     *    A   y     --->     x   C
-     *       / \            / \
-     *      B   C          A   B
-     */
+  
     private void rotacaoEsquerda(No<K, V> x) {
         No<K, V> y = x.dir;
         x.dir = y.esq;
@@ -99,11 +74,9 @@ public class RubroNegra<K extends Comparable<K>, V> implements Arvore<K, V> {
         y.pai = x;
     }
 
-    // ------------------------------------------------------------------ inserir
 
     @Override
     public void inserir(K chave, V dados) {
-        // 1) desce como numa BST comum procurando o lugar
         No<K, V> pai = nil;
         No<K, V> atual = raiz;
         int c = 0;
@@ -117,7 +90,6 @@ public class RubroNegra<K extends Comparable<K>, V> implements Arvore<K, V> {
             atual = (c < 0) ? atual.esq : atual.dir;
         }
 
-        // 2) pendura o nó novo (vermelho) no lugar encontrado
         No<K, V> z = new No<>();
         z.chave = chave;
         z.dados = dados;
@@ -134,16 +106,10 @@ public class RubroNegra<K extends Comparable<K>, V> implements Arvore<K, V> {
         }
         tamanho++;
 
-        // 3) conserta a regra 4 (dois vermelhos seguidos), se ela foi quebrada
         consertarInsercao(z);
     }
 
-    /**
-     * Enquanto o pai de z é vermelho (violação), olhamos o TIO de z:
-     *  - Caso 1: tio vermelho  -> recolore pai, tio e avô; o problema sobe para o avô.
-     *  - Caso 2: tio preto e z é filho "de dentro" (zigue-zague) -> rotação para virar o caso 3.
-     *  - Caso 3: tio preto e z é filho "de fora" (linha reta) -> recolore e faz UMA rotação; acabou.
-     */
+  
     private void consertarInsercao(No<K, V> z) {
         while (z.pai.cor == VERMELHO) {
             if (z.pai == z.pai.pai.esq) {
@@ -183,7 +149,6 @@ public class RubroNegra<K extends Comparable<K>, V> implements Arvore<K, V> {
         raiz.cor = PRETO; // regra 2
     }
 
-    // ------------------------------------------------------------------ buscar
 
     private No<K, V> encontrar(K chave) {
         No<K, V> atual = raiz;
@@ -203,9 +168,7 @@ public class RubroNegra<K extends Comparable<K>, V> implements Arvore<K, V> {
         return (n == nil) ? null : n.dados;
     }
 
-    // ------------------------------------------------------------------ remover
 
-    /** Faz o pai de u apontar para v no lugar de u (a subárvore de u sai da árvore). */
     private void transplantar(No<K, V> u, No<K, V> v) {
         if (u.pai == nil) {
             raiz = v;
@@ -259,8 +222,7 @@ public class RubroNegra<K extends Comparable<K>, V> implements Arvore<K, V> {
         }
         tamanho--;
 
-        // Se o nó que saiu era PRETO, sumiu um nó preto de alguns caminhos (regra 5): conserta.
-        // Se era vermelho, nada foi violado.
+        
         if (corOriginalDeY == PRETO) {
             consertarRemocao(x);
         }
@@ -268,13 +230,7 @@ public class RubroNegra<K extends Comparable<K>, V> implements Arvore<K, V> {
         return true;
     }
 
-    /**
-     * x carrega um "preto extra" (duplo preto). Olhamos o IRMÃO w de x:
-     *  - Caso 1: w vermelho -> rotação + recolorir, transforma em um dos casos 2, 3 ou 4.
-     *  - Caso 2: w preto com os dois filhos pretos -> w vira vermelho e o preto extra sobe para o pai.
-     *  - Caso 3: w preto, filho "de dentro" vermelho e "de fora" preto -> rotação em w, vira o caso 4.
-     *  - Caso 4: w preto com filho "de fora" vermelho -> recolore e rotação no pai; o preto extra some. Acabou.
-     */
+
     private void consertarRemocao(No<K, V> x) {
         while (x != raiz && x.cor == PRETO) {
             if (x == x.pai.esq) {
@@ -330,7 +286,6 @@ public class RubroNegra<K extends Comparable<K>, V> implements Arvore<K, V> {
         x.cor = PRETO;
     }
 
-    // ------------------------------------------------------------------ altura, percursos, etc.
 
     @Override
     public int altura() {
@@ -377,17 +332,7 @@ public class RubroNegra<K extends Comparable<K>, V> implements Arvore<K, V> {
         return tamanho;
     }
 
-    // ------------------------------------------------------------------ validação (usada nos testes)
 
-    /**
-     * Confere as regras da Rubro-Negra e a estrutura:
-     *  - raiz preta e NIL preto (regras 2 e 3);
-     *  - nenhum nó vermelho com filho vermelho (regra 4);
-     *  - mesma altura-preta em todos os caminhos (regra 5);
-     *  - chaves em ordem estritamente crescente;
-     *  - ponteiros para o pai consistentes;
-     *  - número de nós igual a 'tamanho'.
-     */
     @Override
     public boolean validar() {
         if (nil.cor != PRETO || raiz.cor != PRETO) {
@@ -400,7 +345,6 @@ public class RubroNegra<K extends Comparable<K>, V> implements Arvore<K, V> {
         return validar(raiz, null, null, contagem) >= 0 && contagem[0] == tamanho;
     }
 
-    /** Devolve a altura-preta da subárvore, ou -1 se alguma regra foi violada. */
     private int validar(No<K, V> n, K min, K max, int[] contagem) {
         if (n == nil) {
             return 1; // o NIL é preto e conta como 1
