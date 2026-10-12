@@ -3,28 +3,23 @@
 > Projeto da disciplina de **Estrutura de Dados** (Engenharia de Computação – IFC São Bento do Sul) que implementa, em Java, uma árvore binária de busca e duas árvores balanceadas e as compara usando um conjunto de dados real de músicas, o **Free Music Archive (FMA)**.
 
 ![Linguagem](https://img.shields.io/badge/linguagem-Java-blue)
-![Status](https://img.shields.io/badge/status-implementa%C3%A7%C3%A3o%20completa-yellow)
+![Status](https://img.shields.io/badge/status-conclu%C3%ADdo-brightgreen)
 
 ---
 
 ## 📑 Sumário
 
 - [Sobre o Projeto](#-sobre-o-projeto)
-- [Andamento](#-andamento)
 - [Objetivos](#-objetivos)
 - [Estruturas Implementadas](#-estruturas-implementadas)
 - [Conjuntos de Dados](#-conjuntos-de-dados)
-- [Estrutura do Repositório](#-estrutura-do-repositório)
 - [Requisitos](#-requisitos)
 - [Como Executar](#-como-executar)
-- [Exemplo de Uso](#-exemplo-de-uso)
 - [Metodologia dos Experimentos](#-metodologia-dos-experimentos)
 - [Resultados](#-resultados)
 - [Análise e Discussão](#-análise-e-discussão)
 - [Testes](#-testes)
-- [Equipe](#-equipe)
 - [Referências](#-referências)
-- [Licença](#-licença)
 
 ---
 
@@ -36,21 +31,6 @@ Usamos metadados reais de faixas do Free Music Archive (chave: `track_id`) para 
 
 ---
 
-## 📌 Andamento
-
-- [x] Escolha do dataset (FMA)
-- [x] Interface comum (`Arvore`) e convenções do grupo
-- [x] BST (`inserir`, `buscar`, `remover`, `altura`, `percorrer`, contador de comparações)
-- [x] AVL (com rebalanceamento na remoção)
-- [x] Rubro-Negra (com rebalanceamento na remoção)
-- [x] Loader do dataset e script de preparo dos dados
-- [x] Testes de cada árvore
-- [x] Benchmark e gerador de gráficos
-- [x] Demonstração interativa (`Main`)
-- [ ] Rodar o benchmark com o FMA real e preencher a seção de [Resultados](#-resultados)
-- [ ] Slides e apresentação
-
----
 
 ## 🎯 Objetivos
 
@@ -70,7 +50,7 @@ Usamos metadados reais de faixas do Free Music Archive (chave: `track_id`) para 
 | Árvore AVL | `AVL.java` | Rigoroso (fator de balanceamento) | O(log n) |
 | Árvore Rubro-Negra | `RubroNegra.java` | Flexível (regras de cor) | O(log n) |
 
-### Operações suportadas (interface `Arvore<K, V>`)
+### Operações suportadas
 
 - `inserir(chave, dados)`
 - `buscar(chave)` → dados (ou `null` se a chave não existe)
@@ -93,47 +73,10 @@ Usamos metadados reais de faixas do Free Music Archive (chave: `track_id`) para 
 
 | Dataset | Fonte | Nº de registros | Chave utilizada | Descrição |
 |---------|-------|-----------------|-----------------|-----------|
-| FMA – metadados de faixas (`tracks.csv`) | [Free Music Archive Dataset](https://github.com/mdeff/fma) · [UCI](https://archive.ics.uci.edu/dataset/386/fma+a+dataset+for+music+analysis) | 106.574 faixas no total; _(a preencher: quantidade em `data/faixas.csv`, impressa pelo script de preparo)_ | `track_id` (inteiro único) | Título, artista, gênero principal, número de ouvintes e duração de faixas reais publicadas no Free Music Archive |
-
-- **Licença dos dados:** CC BY 4.0.
-- O arquivo original (`fma_metadata.zip`, 342 MiB) **não é versionado**. O repositório inclui o script de download e preparo (veja [Como Executar](#-como-executar)).
-- Faixas sem gênero principal ficam com o gênero "Desconhecido"; faixas sem título, artista, ouvintes ou duração são descartadas.
-- O `track_id` já vem em ordem crescente: inserir sem embaralhar é o pior caso da BST (a árvore vira uma lista); embaralhando, temos o caso médio.
+| FMA – metadados de faixas (`tracks.csv`) | [Free Music Archive Dataset](https://github.com/mdeff/fma) · [UCI](https://archive.ics.uci.edu/dataset/386/fma+a+dataset+for+music+analysis) | 106.574 faixas no total; **106.573** em `data/faixas.csv` depois da limpeza (`track_id` de 2 a 155.320) | `track_id` (inteiro único) | Título, artista, gênero principal, número de ouvintes e duração de faixas reais publicadas no Free Music Archive |
 
 ---
 
-## 🗂 Estrutura do Repositório
-
-```
-.
-├── README.md
-├── LICENSE
-├── .gitignore
-├── data/
-│   ├── fma_metadata/        # Dados originais do FMA (não versionados)
-│   └── faixas.csv           # Dados tratados, gerados pelo script de preparo
-├── scripts/
-│   ├── preparar_dados.py    # Converte o tracks.csv do FMA em data/faixas.csv
-│   └── gerar_graficos.py    # Gera os gráficos e a tabela-resumo a partir dos CSVs do benchmark
-├── src/
-│   └── arvores/
-│       ├── Arvore.java            # Interface comum às 3 árvores
-│       ├── Ordem.java             # PRE, EM, POS
-│       ├── BST.java               # Árvore Binária de Busca
-│       ├── AVL.java               # Árvore AVL
-│       ├── RubroNegra.java        # Árvore Rubro-Negra
-│       ├── Faixa.java             # Dados guardados em cada nó
-│       ├── CarregadorFaixas.java  # Leitura de data/faixas.csv
-│       ├── TesteArvore.java       # Testes das árvores
-│       ├── Benchmark.java         # Medição de desempenho
-│       └── Main.java              # Demonstração interativa
-├── docs/
-│   └── GUIA_DE_ESTUDO.md    # Mapa do código e perguntas prováveis para a apresentação
-├── out/                     # Classes compiladas (não versionado)
-└── results/
-    ├── tabelas/             # CSVs do benchmark e tabela-resumo
-    └── graficos/            # Gráficos gerados
-```
 
 ---
 
@@ -213,25 +156,9 @@ python scripts/gerar_graficos.py
 ```
 
 Grava em `results/graficos/`: `desempenho_tempo.png`, `desempenho_comparacoes.png` e `altura.png` (altura × elementos inseridos, medida a cada 1.000 inserções até o tamanho total do dataset), além de `results/tabelas/resumo_para_readme.md` com as tabelas prontas para colar na seção [Resultados](#-resultados).
+(Caso as imagens não consigam ser visualizadas dentro da IDE, as imagens vão estar salvas dentro das pastas do projeto em seu computador)
 
 ---
-
-## 💡 Exemplo de Uso
-
-```java
-import arvores.*;
-
-Arvore<Integer, String> arvore = new AVL<>();
-int[] chaves = {10, 20, 30, 40, 50, 25};
-for (int k : chaves) {
-    arvore.inserir(k, "dados-" + k);
-}
-
-System.out.println(arvore.buscar(25));              // dados-25
-System.out.println(arvore.altura());                // 3
-System.out.println(arvore.percorrer(Ordem.EM));     // [10, 20, 25, 30, 40, 50]
-System.out.println(arvore.contadorComparacoes());   // total de comparações feitas
-```
 
 ---
 
@@ -251,41 +178,65 @@ System.out.println(arvore.contadorComparacoes());   // total de comparações fe
 - Altura após cada etapa e altura a cada 1.000 inserções (balanceamento)
 - Uso de memória: não medido (opcional no enunciado)
 
-**Ambiente de teste:** _(a preencher com `results/tabelas/ambiente.txt`: processador, memória RAM, sistema operacional e versão do Java)_
+**Ambiente de teste** (gerado pelo próprio benchmark em `results/tabelas/ambiente.txt`):
+
+| Item | Valor |
+|------|-------|
+| Java | 26.0.2 (Java HotSpot 64-Bit Server VM) |
+| Sistema | Windows 11 (amd64) |
+| Processadores lógicos | 16 |
+| Memória máxima da JVM | 3.944 MB |
+| Dataset | `data/faixas.csv` (106.573 faixas) |
+| N do experimento de desempenho | 50.000 faixas |
+| Repetições | 5 |
+| Passo da altura | 1.000 inserções |
+| Semente do embaralhamento | 2026 |
 
 ---
 
 ## 📈 Resultados
 
-> ⚠️ _Ainda não executamos o benchmark com o FMA real. Cole aqui o conteúdo de `results/tabelas/resumo_para_readme.md` e os gráficos depois de rodar os passos 4 e 5._
+Resultados do benchmark rodado no ambiente descrito acima. Os tempos são o **total** de cada conjunto de operações (média de 5 repetições, em ms) e variam de uma execução para outra; as **comparações** e as **alturas** não dependem da máquina. Os números completos estão em `results/tabelas/desempenho.csv` e `results/tabelas/altura_incremental.csv`.
 
-### Tabela comparativa
+### Altura final (todas as 106.573 faixas inseridas)
 
-| Estrutura | Inserção (ms) | Busca (ms) | Remoção (ms) | Comparações | Altura final |
-|-----------|---------------|------------|--------------|-------------|--------------|
-| BST | — | — | — | — | — |
-| AVL | — | — | — | — | — |
-| Rubro-Negra | — | — | — | — | — |
+| Cenário | BST | AVL | Rubro-Negra |
+|---------|-----|-----|-------------|
+| Ordem crescente de `track_id` | **106.573** | 17 | 31 |
+| Ordem aleatória | 40 | 20 | 20 |
+
+### Desempenho — inserção em ordem crescente de `track_id` (pior caso da BST), N = 50.000
+
+| Estrutura | Inserção (ms) | Busca existente (ms) | Busca inexistente (ms) | Remoção (ms) | Comparações (inserção) | Altura após inserir | Altura após remover |
+|-----------|---------------|----------------------|------------------------|--------------|------------------------|---------------------|---------------------|
+| BST | 4.047,7 | 4.215,8 | 7.115,1 | 1.726,9 | 1.249.975.000 | 50.000 | 25.000 |
+| AVL | 10,2 | 20,0 | 7,0 | 13,1 | 734.465 | 16 | 16 |
+| Rubro-Negra | 9,9 | 19,5 | 8,7 | 11,4 | 1.286.225 | 29 | 17 |
+
+### Desempenho — inserção em ordem aleatória (caso médio), N = 50.000
+
+| Estrutura | Inserção (ms) | Busca existente (ms) | Busca inexistente (ms) | Remoção (ms) | Comparações (inserção) | Altura após inserir | Altura após remover |
+|-----------|---------------|----------------------|------------------------|--------------|------------------------|---------------------|---------------------|
+| BST | 25,6 | 22,4 | 7,0 | 11,7 | 962.667 | 38 | 34 |
+| AVL | 28,0 | 18,6 | 7,2 | 14,3 | 720.039 | 18 | 17 |
+| Rubro-Negra | 22,7 | 18,9 | 7,0 | 11,9 | 725.785 | 19 | 18 |
 
 ### Gráficos
 
-```
 ![Tempo](results/graficos/desempenho_tempo.png)
 ![Comparações](results/graficos/desempenho_comparacoes.png)
 ![Altura](results/graficos/altura.png)
-```
 
 ---
 
 ## 🧠 Análise e Discussão
 
-_(a preencher depois dos experimentos)_ Tópicos que vamos discutir:
-
-- Em quais cenários a BST apresentou degradação de desempenho?
-- Qual árvore teve melhor desempenho em buscas? E em inserções e remoções?
-- A AVL (mais rigorosa) e a Rubro-Negra (mais flexível) diferem em altura e em comparações?
-- Qual estrutura é mais adequada para cada tipo de aplicação real?
-- Limitações do estudo e possíveis melhorias.
+- **Degradação da BST:** com chaves em ordem crescente a BST virou uma lista: altura de 106.573 com todas as faixas e 1.249.975.000 comparações para inserir 50.000 chaves, exatamente n(n−1)/2 (comportamento O(n) por operação, O(n²) no total). Inserir levou cerca de 4 s, contra cerca de 10 ms na AVL e na Rubro-Negra (centenas de vezes mais). A busca por chave inexistente foi a mais cara (cerca de 7 s). O benchmark completo levou quase 2 minutos, quase todo gasto na BST ordenada.
+- **Caso médio:** com chaves embaralhadas a BST se comportou bem (altura 40; 38 com 50.000 faixas) e ficou na mesma ordem de grandeza das balanceadas. Chegou a inserir mais rápido que a AVL, que paga o custo das rotações.
+- **Buscas, inserções e remoções:** nos tempos, AVL e Rubro-Negra ficaram praticamente empatadas; diferenças de poucos milissegundos estão dentro do ruído de medição. Nas comparações, a AVL fez menos que a Rubro-Negra na inserção ordenada (734.465 contra 1.286.225), porque a árvore ficou mais baixa (16 contra 29).
+- **AVL × Rubro-Negra:** a AVL é mais rígida e manteve altura menor (17 e 20 com todas as faixas; limite teórico ≈ 24). A Rubro-Negra é mais flexível: 31 (ordenado, perto do limite teórico ≈ 33) e 20 (aleatório). As duas garantem O(log n) nos dois cenários, e a remoção também manteve o equilíbrio (alturas continuaram baixas depois de remover metade das chaves).
+- **Aplicações:** se os dados podem chegar ordenados, ou parcialmente ordenados, uma árvore balanceada é a escolha segura. A Rubro-Negra é a usada em bibliotecas padrão (`TreeMap` do Java); a AVL tende a favorecer cargas com muitas buscas. A BST simples só se justifica quando a ordem de entrada é realmente aleatória.
+- **Limitações:** um único dataset e uma única máquina; tempos dependem da JVM (por isso aquecimento e repetições); memória não medida; o experimento de desempenho usa 50.000 das 106.573 faixas (a altura usa todas); chaves inteiras "encaixotadas" (`Integer`). Como melhorias: medir memória, testar chaves de texto e outros datasets e comparar com uma árvore B.
 
 ---
 
@@ -296,23 +247,9 @@ javac -encoding UTF-8 -d out src/arvores/*.java
 java -cp out arvores.TesteArvore
 ```
 
-Os testes comparam cada árvore com o `TreeMap` do Java em milhares de operações aleatórias (inserir, remover e buscar) e chamam `validar()` depois de cada operação. Também conferem os três percursos, o contador de comparações, chaves repetidas, inserção em ordem crescente e decrescente e o limite de altura logarítmica das árvores balanceadas.
+Os testes (804.567 verificações aprovadas) comparam cada árvore com o `TreeMap` do Java em milhares de operações aleatórias (inserir, remover e buscar) e chamam `validar()` depois de cada operação. Também conferem os três percursos, o contador de comparações, chaves repetidas, inserção em ordem crescente e decrescente e o limite de altura logarítmica das árvores balanceadas.
 
 ---
-
-## 👥 Equipe
-
-| Nome | GitHub | Responsabilidade |
-|------|--------|------------------|
-| Henrique Balassa | [@henriquebalassa](https://github.com/henriquebalassa) | BST e leitura de dados |
-| Laura Veiga      | [@Lauraveigaa](https://github.com/Lauraveigaa) | AVL e benchmarks |
-| Saulo Resende    | [@gitsasa123](https://github.com/gitsasa123) | Rubro-Negra e relatório |
-
-**Disciplina:** Estrutura de Dados
-**Professor:** Lucas Dominguez Cordeiro
-**Curso:** Engenharia de Computação
-**Instituição:** Instituto Federal Catarinense – Campus São Bento do Sul
-**Semestre:** 2026/2
 
 ---
 
@@ -326,7 +263,3 @@ Os testes comparam cada árvore com o `TreeMap` do Java em milhares de operaçõ
 - Documentação da API Java: <https://docs.oracle.com/en/java/javase/21/docs/api/>
 
 ---
-
-## 📄 Licença
-
-O código deste projeto está licenciado sob a licença **MIT**. Consulte o arquivo [LICENSE](LICENSE) para mais detalhes. Os dados do FMA seguem a licença **CC BY 4.0**.
