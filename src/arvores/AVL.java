@@ -3,16 +3,6 @@ package arvores;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Árvore AVL: uma BST que se mantém balanceada.
- *
- * Regra: em TODO nó, as alturas das subárvores esquerda e direita diferem em no máximo 1
- * ("fator de balanceamento" = altura(esq) - altura(dir), sempre em {-1, 0, +1}).
- * Quando uma inserção ou remoção quebra a regra, o nó é consertado com ROTAÇÕES.
- * Resultado: altura sempre O(log n) (no máximo ~1,44 * log2(n)).
- *
- * Os métodos são recursivos porque a altura é pequena (log n): não há risco de estourar a pilha.
- */
 public class AVL<K extends Comparable<K>, V> implements Arvore<K, V> {
 
     private static final class No<K, V> {
@@ -54,17 +44,7 @@ public class AVL<K extends Comparable<K>, V> implements Arvore<K, V> {
         return (n == null) ? 0 : alt(n.esq) - alt(n.dir);
     }
 
-    /**
-     * Rotação à direita em torno de y (usada quando y está pesado para a ESQUERDA):
-     *
-     *        y                x
-     *       / \              / \
-     *      x   C    --->    A   y
-     *     / \                  / \
-     *    A   B                B   C
-     *
-     * A ordem das chaves é preservada (A < x < B < y < C); só a forma muda.
-     */
+
     private No<K, V> rotacaoDireita(No<K, V> y) {
         No<K, V> x = y.esq;
         y.esq = x.dir;
@@ -84,13 +64,7 @@ public class AVL<K extends Comparable<K>, V> implements Arvore<K, V> {
         return y;
     }
 
-    /**
-     * Atualiza a altura do nó e, se ele ficou desbalanceado (|fator| = 2), aplica a rotação certa.
-     * Serve tanto depois de inserir quanto depois de remover.
-     *   Caso esquerda-esquerda: rotação simples à direita.
-     *   Caso esquerda-direita : rotação dupla (primeiro esquerda no filho, depois direita no nó).
-     *   E os dois casos espelhados para a direita.
-     */
+  
     private No<K, V> balancear(No<K, V> n) {
         atualizarAltura(n);
         int fb = fator(n);
@@ -109,7 +83,6 @@ public class AVL<K extends Comparable<K>, V> implements Arvore<K, V> {
         return n;                           // já estava balanceado
     }
 
-    // ------------------------------------------------------------------ inserir
 
     @Override
     public void inserir(K chave, V dados) {
@@ -150,7 +123,6 @@ public class AVL<K extends Comparable<K>, V> implements Arvore<K, V> {
         return null;
     }
 
-    // ------------------------------------------------------------------ remover
 
     @Override
     public boolean remover(K chave) {
@@ -179,8 +151,7 @@ public class AVL<K extends Comparable<K>, V> implements Arvore<K, V> {
             if (no.dir == null) {
                 return no.esq;
             }
-            // 2 filhos: copia o sucessor (menor chave da direita) para este nó
-            // e apaga o nó do sucessor lá embaixo.
+            
             No<K, V> sucessor = no.dir;
             while (sucessor.esq != null) {
                 sucessor = sucessor.esq;
@@ -192,7 +163,6 @@ public class AVL<K extends Comparable<K>, V> implements Arvore<K, V> {
         return balancear(no);   // REBALANCEIA subindo pelo caminho (exigência do enunciado)
     }
 
-    /** Remove o menor nó da subárvore (o que está mais à esquerda), rebalanceando no caminho. */
     private No<K, V> removerMenor(No<K, V> no) {
         if (no.esq == null) {
             return no.dir;
@@ -201,7 +171,6 @@ public class AVL<K extends Comparable<K>, V> implements Arvore<K, V> {
         return balancear(no);
     }
 
-    // ------------------------------------------------------------------ altura, percursos, etc.
 
     @Override
     public int altura() {
@@ -241,16 +210,7 @@ public class AVL<K extends Comparable<K>, V> implements Arvore<K, V> {
         return tamanho;
     }
 
-    // ------------------------------------------------------------------ validação (usada nos testes)
 
-    /**
-     * Confere TUDO que uma AVL precisa ter:
-     *  - chaves em ordem estritamente crescente (propriedade da BST);
-     *  - altura guardada em cada nó confere com a altura real;
-     *  - fator de balanceamento de todo nó em {-1, 0, +1};
-     *  - número de nós igual a 'tamanho'.
-     * (usa compareTo direto para não alterar o contador de comparações)
-     */
     @Override
     public boolean validar() {
         int[] contagem = {0};
