@@ -6,16 +6,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Scanner;
 
-/**
- * Demonstração ao vivo: carrega faixas do FMA nas três árvores e deixa buscar, inserir, remover
- * e comparar, mostrando quantas comparações cada árvore precisou.
- *
- * Uso:  java -cp out arvores.Main [csv] [N] [ordenado|embaralhado]
- *   csv   (padrão: data/faixas.csv)
- *   N     quantas faixas carregar (padrão: 20000)
- *   modo  ordem de inserção na carga (padrão: embaralhado).
- *         Com "ordenado" a BST vira uma lista: ótimo para mostrar o pior caso (use N pequeno, ex.: 20000).
- */
+
 public final class Main {
 
     private static final String[] NOMES = {"BST", "AVL", "Rubro-Negra"};
