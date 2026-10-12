@@ -6,13 +6,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 
-/**
- * Árvore binária de busca (sem balanceamento).
- *
- * Todos os métodos são ITERATIVOS de propósito: inserindo as chaves em ordem
- * crescente a árvore vira uma lista (altura = n) e uma versão recursiva
- * estouraria a pilha (StackOverflowError) com dezenas de milhares de nós.
- */
+
 public class BST<K extends Comparable<K>, V> implements Arvore<K, V> {
 
     private static final class No<K, V> {
@@ -31,7 +25,6 @@ public class BST<K extends Comparable<K>, V> implements Arvore<K, V> {
     private int tamanho;
     private long comparacoes;
 
-    /** Única porta de comparação de chaves: assim nenhuma comparação escapa da contagem. */
     private int comparar(K a, K b) {
         comparacoes++;
         return a.compareTo(b);
@@ -84,7 +77,6 @@ public class BST<K extends Comparable<K>, V> implements Arvore<K, V> {
 
     @Override
     public boolean remover(K chave) {
-        // 1) localizar o nó e o pai dele
         No<K, V> pai = null;
         No<K, V> atual = raiz;
         boolean ehFilhoEsq = false;
@@ -107,8 +99,7 @@ public class BST<K extends Comparable<K>, V> implements Arvore<K, V> {
         }
 
         if (atual.esq != null && atual.dir != null) {
-            // 2 filhos: troca pelo sucessor (menor chave da subárvore direita)
-            // e remove o nó do sucessor, que tem no máximo um filho (direito).
+         
             No<K, V> paiSucessor = atual;
             No<K, V> sucessor = atual.dir;
             while (sucessor.esq != null) {
@@ -123,7 +114,6 @@ public class BST<K extends Comparable<K>, V> implements Arvore<K, V> {
                 paiSucessor.esq = sucessor.dir;
             }
         } else {
-            // 0 ou 1 filho: o filho (ou null) ocupa o lugar do nó
             No<K, V> filho = (atual.esq != null) ? atual.esq : atual.dir;
             if (pai == null) {
                 raiz = filho;
@@ -142,7 +132,6 @@ public class BST<K extends Comparable<K>, V> implements Arvore<K, V> {
         if (raiz == null) {
             return 0;
         }
-        // percurso por níveis: conta quantos níveis existem
         Deque<No<K, V>> fila = new ArrayDeque<>();
         fila.add(raiz);
         int h = 0;
@@ -188,7 +177,6 @@ public class BST<K extends Comparable<K>, V> implements Arvore<K, V> {
                 }
             }
             case POS -> {
-                // gera "raiz, direita, esquerda" e inverte no final -> "esquerda, direita, raiz"
                 pilha.push(raiz);
                 while (!pilha.isEmpty()) {
                     No<K, V> n = pilha.pop();
