@@ -15,25 +15,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.function.Supplier;
 
-/**
- * Mede o desempenho das três árvores com os dados reais do FMA e grava CSVs em results/tabelas.
- * Os gráficos são gerados depois por scripts/gerar_graficos.py a partir desses CSVs.
- *
- * Uso:  java -cp out arvores.Benchmark [csv] [N] [repeticoes] [passo] [pastaSaida] [nAltura]
- *   csv         dados tratados                                  (padrão: data/faixas.csv)
- *   N           nº de faixas no experimento de desempenho       (padrão: 50000; 0 = todas)
- *   repeticoes  quantas vezes cada medição é repetida           (padrão: 5)
- *   passo       a cada quantas inserções medir a altura         (padrão: 1000)
- *   pastaSaida  onde gravar os CSVs                             (padrão: results/tabelas)
- *   nAltura     nº de faixas no experimento de altura           (padrão: 0 = todas)
- *
- * Dois experimentos:
- *   1) ALTURA x ELEMENTOS: insere o dataset aos poucos e mede a altura a cada 'passo' inserções.
- *   2) DESEMPENHO: para cada operação mede tempo, nº de comparações e altura.
- * Cada experimento roda em dois cenários:
- *   ORDENADO    - chaves em ordem crescente de track_id (pior caso da BST)
- *   EMBARALHADO - mesmas chaves em ordem aleatória, com semente fixa (caso médio)
- */
+
 public final class Benchmark {
 
     private static final long SEMENTE = 2026L;
@@ -45,12 +27,10 @@ public final class Benchmark {
     private record Fabrica(String nome, Supplier<Arvore<Integer, Faixa>> criar) {
     }
 
-    /** Tudo que uma execução precisa, montado uma vez por cenário para ser IGUAL nas 3 árvores. */
     private record Dados(List<CarregadorFaixas.Registro> insercao, List<Integer> chavesBusca,
                          List<Integer> chavesInexistentes, List<Integer> chavesRemocao) {
     }
 
-    /** Resultado de uma operação em uma execução. */
     private record Medida(long tempoNs, long comparacoes, int operacoes, int altura) {
     }
 
@@ -102,7 +82,6 @@ public final class Benchmark {
         return new ArrayList<>(todos.subList(0, tam));
     }
 
-    // ===================================================================== experimento 1: altura
 
     private static void experimentoAltura(List<CarregadorFaixas.Registro> base, int passo, Path arquivo)
             throws IOException {
@@ -134,7 +113,6 @@ public final class Benchmark {
         Files.writeString(arquivo, csv.toString(), StandardCharsets.UTF_8);
     }
 
-    // ===================================================================== experimento 2: desempenho
 
     private static void experimentoDesempenho(List<CarregadorFaixas.Registro> base, int repeticoes, Path arquivo)
             throws IOException {
@@ -142,7 +120,6 @@ public final class Benchmark {
         System.out.println("\n== Experimento 2: desempenho (" + n + " faixas, " + repeticoes
                 + " repetições por medição) ==");
 
-        // aquecimento: deixa o JIT do Java compilar o código antes de medir (resultado descartado)
         System.out.println("  aquecendo a JVM ...");
         List<CarregadorFaixas.Registro> pequeno = recorte(base, 5000);
         for (Cenario cenario : Cenario.values()) {
@@ -182,7 +159,6 @@ public final class Benchmark {
         imprimirResumo(csv.toString());
     }
 
-    /** Monta as listas de chaves de um cenário. A mesma semente garante listas idênticas para as 3 árvores. */
     private static Dados montarDados(List<CarregadorFaixas.Registro> base, Cenario cenario) {
         int n = base.size();
         List<CarregadorFaixas.Registro> insercao = new ArrayList<>(base);
@@ -200,7 +176,6 @@ public final class Benchmark {
         List<Integer> chavesBusca = new ArrayList<>(chaves);
         Collections.shuffle(chavesBusca, new Random(SEMENTE + 1));
 
-        // chaves que NÃO estão na árvore: sorteadas entre a menor chave e a maior + n
         int min = chaves.get(0);
         int max = chaves.get(n - 1);
         Random rnd = new Random(SEMENTE + 2);
@@ -225,7 +200,6 @@ public final class Benchmark {
         Arvore<Integer, Faixa> a = f.criar().get();
         Medida[] r = new Medida[Operacao.values().length];
 
-        // --- inserção
         a.zerarContador();
         long t0 = System.nanoTime();
         for (CarregadorFaixas.Registro x : d.insercao()) {
@@ -235,7 +209,6 @@ public final class Benchmark {
         r[Operacao.INSERCAO.ordinal()] = new Medida(t1 - t0, a.contadorComparacoes(), d.insercao().size(), a.altura());
         exigir(a.tamanho() == d.insercao().size(), f.nome() + ": tamanho errado após inserir");
 
-        // --- busca de chaves que existem
         a.zerarContador();
         int achou = 0;
         t0 = System.nanoTime();
@@ -248,7 +221,6 @@ public final class Benchmark {
         r[Operacao.BUSCA_EXISTENTE.ordinal()] = new Medida(t1 - t0, a.contadorComparacoes(), d.chavesBusca().size(), a.altura());
         exigir(achou == d.chavesBusca().size(), f.nome() + ": busca não encontrou chave existente");
 
-        // --- busca de chaves que NÃO existem
         a.zerarContador();
         achou = 0;
         t0 = System.nanoTime();
@@ -261,7 +233,6 @@ public final class Benchmark {
         r[Operacao.BUSCA_INEXISTENTE.ordinal()] = new Medida(t1 - t0, a.contadorComparacoes(), d.chavesInexistentes().size(), a.altura());
         exigir(achou == 0, f.nome() + ": busca encontrou chave que não existe");
 
-        // --- remoção de metade das chaves
         a.zerarContador();
         int removidos = 0;
         t0 = System.nanoTime();
@@ -284,7 +255,6 @@ public final class Benchmark {
         }
     }
 
-    // ===================================================================== utilidades
 
     private static double media(double[] v) {
         double soma = 0;
