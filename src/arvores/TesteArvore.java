@@ -8,13 +8,7 @@ import java.util.Random;
 import java.util.TreeMap;
 import java.util.function.Supplier;
 
-/**
- * Testes que valem para QUALQUER implementação de Arvore (BST, AVL, Rubro-Negra).
- * Compara a árvore com o TreeMap do Java (que serve de "gabarito") em milhares de
- * operações aleatórias e chama validar() depois de cada uma.
- *
- * Para testar as outras árvores, adicione-as no main().
- */
+
 public final class TesteArvore {
 
     private static int verificacoes = 0;
@@ -36,10 +30,7 @@ public final class TesteArvore {
         System.out.println("\nOK: " + verificacoes + " verificações passaram.");
     }
 
-    /**
-     * @param fatorAltura 0 = árvore sem balanceamento (não checa altura);
-     *                    senão, a altura precisa ser <= fatorAltura * log2(n + 2) + 1
-     */
+  
     static void testarTudo(String nome, Supplier<Arvore<Integer, String>> fabrica, double fatorAltura) {
         System.out.println("== " + nome + " ==");
         testeBasico(nome, fabrica);
@@ -117,7 +108,6 @@ public final class TesteArvore {
                 seed, faixaDeChaves, a.altura(), a.tamanho());
     }
 
-    /** Em-ordem igual ao gabarito; pré e pós-ordem consistentes com a MESMA árvore. */
     private static void conferePercursos(String nome, Arvore<Integer, String> a,
                                          TreeMap<Integer, String> gabarito, int op) {
         List<Integer> em = a.percorrer(Ordem.EM);
@@ -127,8 +117,7 @@ public final class TesteArvore {
         List<Integer> pos = a.percorrer(Ordem.POS);
         confere(pre.size() == em.size() && pos.size() == em.size(), nome + ": tamanhos dos percursos, op " + op);
 
-        // Pré-ordem + em-ordem determinam uma única árvore; a pós-ordem dela
-        // precisa ser a pós-ordem que a implementação devolveu.
+    
         Map<Integer, Integer> posicaoEm = new HashMap<>();
         for (int i = 0; i < em.size(); i++) {
             posicaoEm.put(em.get(i), i);
@@ -150,7 +139,6 @@ public final class TesteArvore {
         saida.add(raiz);
     }
 
-    /** Chaves em ordem crescente: pior caso da BST. Mostra altura e comparações. */
     private static void testeOrdenado(String nome, Supplier<Arvore<Integer, String>> fabrica, int n,
                                       double fatorAltura) {
         Arvore<Integer, String> a = fabrica.get();
@@ -172,7 +160,6 @@ public final class TesteArvore {
         conferirAlturaLogaritmica(nome, a, n / 2, fatorAltura);
     }
 
-    /** Chaves em ordem decrescente: o outro pior caso da BST (todas vão para a esquerda). */
     private static void testeOrdemInversa(String nome, Supplier<Arvore<Integer, String>> fabrica, int n,
                                           double fatorAltura) {
         Arvore<Integer, String> a = fabrica.get();
