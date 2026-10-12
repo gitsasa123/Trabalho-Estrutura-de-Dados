@@ -1,0 +1,10 @@
+data/hora: 2026-10-12T12:08:00.789031900
+java: 26.0.2 (Java HotSpot(TM) 64-Bit Server VM)
+sistema: Windows 11 amd64
+processadores logicos: 16
+memoria maxima da JVM (MB): 3944
+dataset: data\faixas.csv (106573 faixas)
+N do experimento de desempenho: 50000
+repeticoes: 5
+passo da altura: 1000
+semente: 2026

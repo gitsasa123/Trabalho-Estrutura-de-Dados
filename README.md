@@ -1,16 +1,16 @@
-n# 🌳 Estruturas de Dados em Árvore: BST, AVL e Rubro-Negra
+🌳 Estruturas de Dados em Árvore: BST, AVL e Rubro-Negra
 
-> Projeto da disciplina de **Estrutura de Dados** que implementa e compara árvores binárias de busca e árvores balanceadas usando conjuntos de dados reais.
+> Projeto da disciplina de **Estrutura de Dados** (Engenharia de Computação – IFC São Bento do Sul) que implementa, em Java, uma árvore binária de busca e duas árvores balanceadas e as compara usando um conjunto de dados real de músicas, o **Free Music Archive (FMA)**.
 
-![Linguagem](https://img.shields.io/badge/linguagem-Python-blue)
-![Licença](https://img.shields.io/badge/licença-MIT-green)
-![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)
+![Linguagem](https://img.shields.io/badge/linguagem-Java-blue)
+![Status](https://img.shields.io/badge/status-implementa%C3%A7%C3%A3o%20completa-yellow)
 
 ---
 
 ## 📑 Sumário
 
 - [Sobre o Projeto](#-sobre-o-projeto)
+- [Andamento](#-andamento)
 - [Objetivos](#-objetivos)
 - [Estruturas Implementadas](#-estruturas-implementadas)
 - [Conjuntos de Dados](#-conjuntos-de-dados)
@@ -30,18 +30,34 @@ n# 🌳 Estruturas de Dados em Árvore: BST, AVL e Rubro-Negra
 
 ## 📖 Sobre o Projeto
 
-Descreva aqui, em 2 ou 3 parágrafos, o contexto do trabalho.
+Este projeto implementa três árvores de busca em Java — **BST** (árvore binária de busca sem balanceamento), **AVL** e **Rubro-Negra** — com as operações de inserção, busca, remoção, altura, percursos e contagem de comparações. As três seguem a mesma interface (`Arvore`), o que permite rodar exatamente os mesmos experimentos em cada uma.
 
-**Exemplo:** Este projeto implementa três estruturas de dados em árvore (Árvore Binária de Busca, AVL e Rubro-Negra) e as avalia em cenários práticos de inserção, busca e remoção, utilizando dados reais. O objetivo é observar como o balanceamento influencia o desempenho em diferentes tipos de entrada (ordenada, aleatória e parcialmente ordenada).
+Usamos metadados reais de faixas do Free Music Archive (chave: `track_id`) para comparar **tempo de execução, número de comparações e altura** de cada estrutura em cenários práticos, como inserção em ordem crescente (pior caso da BST) e em ordem aleatória (caso médio), e assim entender as vantagens e desvantagens de cada uma.
+
+---
+
+## 📌 Andamento
+
+- [x] Escolha do dataset (FMA)
+- [x] Interface comum (`Arvore`) e convenções do grupo
+- [x] BST (`inserir`, `buscar`, `remover`, `altura`, `percorrer`, contador de comparações)
+- [x] AVL (com rebalanceamento na remoção)
+- [x] Rubro-Negra (com rebalanceamento na remoção)
+- [x] Loader do dataset e script de preparo dos dados
+- [x] Testes de cada árvore
+- [x] Benchmark e gerador de gráficos
+- [x] Demonstração interativa (`Main`)
+- [ ] Rodar o benchmark com o FMA real e preencher a seção de [Resultados](#-resultados)
+- [ ] Slides e apresentação
 
 ---
 
 ## 🎯 Objetivos
 
 - Implementar uma **Árvore Binária de Busca (BST)**.
-- Implementar **duas árvores balanceadas** (AVL e Rubro-Negra).
-- Aplicar as estruturas em **conjuntos de dados reais**.
-- Comparar **tempo de execução, altura e número de rotações**.
+- Implementar **duas árvores balanceadas** (AVL e Rubro-Negra), com remoção que mantém o balanceamento.
+- Aplicar as estruturas a um **conjunto de dados real** (mínimo de 10.000 registros).
+- Comparar **tempo de execução, número de comparações e altura** das árvores.
 - Documentar as características de cada estrutura em cenários práticos.
 
 ---
@@ -50,18 +66,26 @@ Descreva aqui, em 2 ou 3 parágrafos, o contexto do trabalho.
 
 | Estrutura | Arquivo | Balanceamento | Complexidade (pior caso) |
 |-----------|---------|---------------|--------------------------|
-| Árvore Binária de Busca | `bst.py` | Não possui | O(n) |
-| Árvore AVL | `avl.py` | Rigoroso (fator de balanceamento) | O(log n) |
-| Árvore Rubro-Negra | `red_black.py` | Flexível (regras de cor) | O(log n) |
+| Árvore Binária de Busca | `BST.java` | Não possui | O(n) |
+| Árvore AVL | `AVL.java` | Rigoroso (fator de balanceamento) | O(log n) |
+| Árvore Rubro-Negra | `RubroNegra.java` | Flexível (regras de cor) | O(log n) |
 
-### Operações suportadas
+### Operações suportadas (interface `Arvore<K, V>`)
 
-- `inserir(chave)`
-- `buscar(chave)`
-- `remover(chave)`
+- `inserir(chave, dados)`
+- `buscar(chave)` → dados (ou `null` se a chave não existe)
+- `remover(chave)` → `true` se a chave existia
 - `altura()`
-- `percurso_em_ordem()`, `percurso_pre_ordem()`, `percurso_pos_ordem()`
-- `contar_rotacoes()` *(somente AVL e Rubro-Negra)*
+- `percorrer(Ordem.PRE | Ordem.EM | Ordem.POS)` → lista de chaves
+- `contadorComparacoes()` e `zerarContador()`
+- `tamanho()` e `validar()` (verifica as propriedades da estrutura; usado nos testes)
+
+### Convenções (iguais nas três árvores)
+
+- **Chave repetida** em `inserir`: os dados antigos são substituídos e o tamanho não muda.
+- **Altura:** número de nós do caminho mais longo da raiz até uma folha (árvore vazia = 0; um único nó = 1).
+- **Comparações:** cada comparação entre chaves (`compareTo`) feita em `inserir`, `buscar` e `remover` incrementa o contador.
+- **BST iterativa:** todos os métodos da BST usam laços (e não recursão), pois com chaves em ordem crescente a altura chega a ~100 mil e a recursão estouraria a pilha.
 
 ---
 
@@ -69,13 +93,12 @@ Descreva aqui, em 2 ou 3 parágrafos, o contexto do trabalho.
 
 | Dataset | Fonte | Nº de registros | Chave utilizada | Descrição |
 |---------|-------|-----------------|-----------------|-----------|
-| Exemplo A | [Nome da fonte](https://exemplo.com) | 10.000 | ID | Descrição breve do conjunto |
-| Exemplo B | [Nome da fonte](https://exemplo.com) | 100.000 | CPF / Código | Descrição breve do conjunto |
-| Exemplo C | [Nome da fonte](https://exemplo.com) | 500.000 | Data | Descrição breve do conjunto |
+| FMA – metadados de faixas (`tracks.csv`) | [Free Music Archive Dataset](https://github.com/mdeff/fma) · [UCI](https://archive.ics.uci.edu/dataset/386/fma+a+dataset+for+music+analysis) | 106.574 faixas no total; _(a preencher: quantidade em `data/faixas.csv`, impressa pelo script de preparo)_ | `track_id` (inteiro único) | Título, artista, gênero principal, número de ouvintes e duração de faixas reais publicadas no Free Music Archive |
 
-> **Sugestões de fontes:** Kaggle, Dados Abertos do Governo Federal, IBGE, UCI Machine Learning Repository.
-
-Os arquivos originais ficam em `data/raw/` e as versões tratadas em `data/processed/`.
+- **Licença dos dados:** CC BY 4.0.
+- O arquivo original (`fma_metadata.zip`, 342 MiB) **não é versionado**. O repositório inclui o script de download e preparo (veja [Como Executar](#-como-executar)).
+- Faixas sem gênero principal ficam com o gênero "Desconhecido"; faixas sem título, artista, ouvintes ou duração são descartadas.
+- O `track_id` já vem em ordem crescente: inserir sem embaralhar é o pior caso da BST (a árvore vira uma lista); embaralhando, temos o caso médio.
 
 ---
 
@@ -85,135 +108,182 @@ Os arquivos originais ficam em `data/raw/` e as versões tratadas em `data/proce
 .
 ├── README.md
 ├── LICENSE
-├── requirements.txt
+├── .gitignore
 ├── data/
-│   ├── raw/                 # Dados originais
-│   └── processed/           # Dados tratados
+│   ├── fma_metadata/        # Dados originais do FMA (não versionados)
+│   └── faixas.csv           # Dados tratados, gerados pelo script de preparo
+├── scripts/
+│   ├── preparar_dados.py    # Converte o tracks.csv do FMA em data/faixas.csv
+│   └── gerar_graficos.py    # Gera os gráficos e a tabela-resumo a partir dos CSVs do benchmark
 ├── src/
-│   ├── bst.py               # Árvore Binária de Busca
-│   ├── avl.py               # Árvore AVL
-│   ├── red_black.py         # Árvore Rubro-Negra
-│   ├── node.py              # Classe(s) de nó
-│   ├── data_loader.py       # Leitura e tratamento dos datasets
-│   ├── benchmark.py         # Medição de desempenho
-│   └── main.py              # Ponto de entrada
-├── tests/
-│   ├── test_bst.py
-│   ├── test_avl.py
-│   └── test_red_black.py
-├── results/
-│   ├── tabelas/             # Resultados em CSV
-│   └── graficos/            # Gráficos gerados
-└── docs/
-    └── relatorio.pdf        # Relatório final (opcional)
+│   └── arvores/
+│       ├── Arvore.java            # Interface comum às 3 árvores
+│       ├── Ordem.java             # PRE, EM, POS
+│       ├── BST.java               # Árvore Binária de Busca
+│       ├── AVL.java               # Árvore AVL
+│       ├── RubroNegra.java        # Árvore Rubro-Negra
+│       ├── Faixa.java             # Dados guardados em cada nó
+│       ├── CarregadorFaixas.java  # Leitura de data/faixas.csv
+│       ├── TesteArvore.java       # Testes das árvores
+│       ├── Benchmark.java         # Medição de desempenho
+│       └── Main.java              # Demonstração interativa
+├── docs/
+│   └── GUIA_DE_ESTUDO.md    # Mapa do código e perguntas prováveis para a apresentação
+├── out/                     # Classes compiladas (não versionado)
+└── results/
+    ├── tabelas/             # CSVs do benchmark e tabela-resumo
+    └── graficos/            # Gráficos gerados
 ```
 
 ---
 
 ## ⚙️ Requisitos
 
-- Python 3.10 ou superior
-- Bibliotecas listadas em `requirements.txt`:
-  - `pandas`
-  - `matplotlib`
-  - `pytest`
+- **Java 17 ou superior** (testado com Java 21)
+- **Python 3** com `pandas` e `matplotlib` (`pip install pandas matplotlib`) — usado apenas para preparar os dados e gerar os gráficos
 
 ---
 
 ## 🚀 Como Executar
 
-```bash
-# 1. Clonar o repositório
-git clone https://github.com/usuario/nome-do-repositorio.git
-cd nome-do-repositorio
+Os comandos abaixo funcionam no terminal do VS Code (PowerShell ou Git Bash), no Linux e no macOS. Rode todos na pasta do projeto.
 
-# 2. (Opcional) Criar ambiente virtual
-python -m venv venv
-source venv/bin/activate      # Linux/Mac
-venv\Scripts\activate         # Windows
+### 1. Baixar e preparar os dados
 
-# 3. Instalar dependências
-pip install -r requirements.txt
-
-# 4. Executar o programa
-python src/main.py
-```
-
-### Parâmetros opcionais
+Baixe o arquivo https://os.unil.cloud.switch.ch/fma/fma_metadata.zip (342 MiB) e extraia dentro de `data/`, de modo que exista `data/fma_metadata/tracks.csv`.
 
 ```bash
-python src/main.py --dataset data/processed/exemplo.csv --arvore avl
+# Linux / macOS / Git Bash
+curl -L -o data/fma_metadata.zip https://os.unil.cloud.switch.ch/fma/fma_metadata.zip
+unzip data/fma_metadata.zip -d data/
+
+# Windows (PowerShell): use curl.exe (curl, sozinho, é outro comando no PowerShell)
+curl.exe -L -o data/fma_metadata.zip https://os.unil.cloud.switch.ch/fma/fma_metadata.zip
+tar -xf data/fma_metadata.zip -C data
 ```
 
-| Parâmetro | Descrição | Valores |
-|-----------|-----------|---------|
-| `--dataset` | Caminho do arquivo de dados | caminho `.csv` |
-| `--arvore` | Estrutura a ser usada | `bst`, `avl`, `rb`, `todas` |
+Depois, gere o CSV tratado (a quantidade de faixas aparece no final):
+
+```bash
+pip install pandas matplotlib
+python scripts/preparar_dados.py data/fma_metadata/tracks.csv data/faixas.csv
+```
+
+Se o script avisar de coluna faltando, ele lista as colunas existentes: ajuste o dicionário `COLUNAS` no topo de `scripts/preparar_dados.py`.
+
+### 2. Compilar e testar
+
+```bash
+javac -encoding UTF-8 -d out src/arvores/*.java
+java -cp out arvores.TesteArvore
+```
+
+> Dicas para Windows: se o PowerShell não expandir o `*.java`, use `javac -encoding UTF-8 -d out (Get-ChildItem src/arvores/*.java)`. Se os acentos aparecerem trocados no terminal, rode o Java com `java -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -cp out ...`.
+
+### 3. Demonstração interativa
+
+```bash
+java -cp out arvores.Main data/faixas.csv 20000 embaralhado
+java -cp out arvores.Main data/faixas.csv 20000 ordenado      # pior caso da BST
+```
+
+### 4. Executar o benchmark
+
+```bash
+java -cp out arvores.Benchmark
+```
+
+Parâmetros opcionais: `java -cp out arvores.Benchmark [csv] [N] [repeticoes] [passo] [pastaSaida] [nAltura]`
+
+| Parâmetro | Descrição | Padrão |
+|-----------|-----------|--------|
+| `csv` | Dados tratados | `data/faixas.csv` |
+| `N` | Nº de faixas no experimento de desempenho (0 = todas) | `50000` |
+| `repeticoes` | Repetições de cada medição (usamos a média) | `5` |
+| `passo` | A cada quantas inserções medir a altura | `1000` |
+| `pastaSaida` | Onde gravar os CSVs | `results/tabelas` |
+| `nAltura` | Nº de faixas no experimento de altura (0 = todas) | `0` |
+
+O benchmark grava em `results/tabelas/`: `desempenho.csv`, `altura_incremental.csv` e `ambiente.txt` (versão do Java, sistema e processadores, para a seção "Ambiente de teste"). Na BST com chaves ordenadas as operações são lentas (O(n²) no total): espere alguns minutos. Para um teste rápido: `java -cp out arvores.Benchmark data/faixas.csv 10000 2`.
+
+### 5. Gerar os gráficos
+
+```bash
+python scripts/gerar_graficos.py
+```
+
+Grava em `results/graficos/`: `desempenho_tempo.png`, `desempenho_comparacoes.png` e `altura.png` (altura × elementos inseridos, medida a cada 1.000 inserções até o tamanho total do dataset), além de `results/tabelas/resumo_para_readme.md` com as tabelas prontas para colar na seção [Resultados](#-resultados).
 
 ---
 
 ## 💡 Exemplo de Uso
 
-```python
-from src.avl import AVL
+```java
+import arvores.*;
 
-arvore = AVL()
-for valor in [10, 20, 30, 40, 50, 25]:
-    arvore.inserir(valor)
+Arvore<Integer, String> arvore = new AVL<>();
+int[] chaves = {10, 20, 30, 40, 50, 25};
+for (int k : chaves) {
+    arvore.inserir(k, "dados-" + k);
+}
 
-print(arvore.buscar(25))              # True
-print(arvore.altura())                # 3
-print(arvore.percurso_em_ordem())     # [10, 20, 25, 30, 40, 50]
+System.out.println(arvore.buscar(25));              // dados-25
+System.out.println(arvore.altura());                // 3
+System.out.println(arvore.percorrer(Ordem.EM));     // [10, 20, 25, 30, 40, 50]
+System.out.println(arvore.contadorComparacoes());   // total de comparações feitas
 ```
 
 ---
 
 ## 🔬 Metodologia dos Experimentos
 
-Descreva como os testes foram conduzidos.
+**Cenários avaliados** (os mesmos dados, na mesma ordem, para as três árvores):
 
-**Cenários avaliados:**
+1. **Inserção em ordem crescente de `track_id`:** pior caso para a BST.
+2. **Inserção em ordem aleatória** (embaralhamento com semente fixa, para ser reproduzível): caso médio.
 
-1. **Inserção ordenada:** pior caso para a BST.
-2. **Inserção aleatória:** caso médio.
-3. **Busca de elementos existentes e inexistentes.**
-4. **Remoção de elementos.**
+**Operações medidas em cada cenário:** inserção de todas as faixas; busca de todas as chaves existentes; busca do mesmo número de chaves inexistentes; remoção de metade das chaves, em ordem aleatória. Ao final, `validar()` confirma que cada árvore continua correta.
 
 **Métricas coletadas:**
 
-- Tempo de execução (ms)
-- Altura final da árvore
-- Quantidade de rotações
-- Uso de memória *(opcional)*
+- Tempo de execução de cada operação (ms): média e desvio padrão de 5 repetições, depois de um aquecimento da JVM
+- Número de comparações entre chaves
+- Altura após cada etapa e altura a cada 1.000 inserções (balanceamento)
+- Uso de memória: não medido (opcional no enunciado)
 
-**Ambiente de teste:** *(exemplo)* Intel Core i5, 8 GB RAM, Python 3.12, Windows 11.
+**Ambiente de teste:** _(a preencher com `results/tabelas/ambiente.txt`: processador, memória RAM, sistema operacional e versão do Java)_
 
 ---
 
 ## 📈 Resultados
 
-### Tabela comparativa *(valores fictícios)*
+> ⚠️ _Ainda não executamos o benchmark com o FMA real. Cole aqui o conteúdo de `results/tabelas/resumo_para_readme.md` e os gráficos depois de rodar os passos 4 e 5._
 
-| Estrutura | Inserção (ms) | Busca (ms) | Remoção (ms) | Altura | Rotações |
-|-----------|---------------|------------|--------------|--------|----------|
-| BST | 000 | 000 | 000 | 000 | - |
-| AVL | 000 | 000 | 000 | 000 | 000 |
-| Rubro-Negra | 000 | 000 | 000 | 000 | 000 |
+### Tabela comparativa
+
+| Estrutura | Inserção (ms) | Busca (ms) | Remoção (ms) | Comparações | Altura final |
+|-----------|---------------|------------|--------------|-------------|--------------|
+| BST | — | — | — | — | — |
+| AVL | — | — | — | — | — |
+| Rubro-Negra | — | — | — | — | — |
 
 ### Gráficos
 
-![Comparação de tempo](results/graficos/tempo_insercao.png)
-![Comparação de altura](results/graficos/altura.png)
+```
+![Tempo](results/graficos/desempenho_tempo.png)
+![Comparações](results/graficos/desempenho_comparacoes.png)
+![Altura](results/graficos/altura.png)
+```
 
 ---
 
 ## 🧠 Análise e Discussão
 
-Use esta seção para interpretar os resultados. Sugestões de tópicos:
+_(a preencher depois dos experimentos)_ Tópicos que vamos discutir:
 
 - Em quais cenários a BST apresentou degradação de desempenho?
-- Qual árvore teve melhor desempenho em buscas? E em inserções?
-- Quanto o número de rotações impactou o tempo total?
+- Qual árvore teve melhor desempenho em buscas? E em inserções e remoções?
+- A AVL (mais rigorosa) e a Rubro-Negra (mais flexível) diferem em altura e em comparações?
 - Qual estrutura é mais adequada para cada tipo de aplicação real?
 - Limitações do estudo e possíveis melhorias.
 
@@ -222,8 +292,11 @@ Use esta seção para interpretar os resultados. Sugestões de tópicos:
 ## ✅ Testes
 
 ```bash
-pytest tests/
+javac -encoding UTF-8 -d out src/arvores/*.java
+java -cp out arvores.TesteArvore
 ```
+
+Os testes comparam cada árvore com o `TreeMap` do Java em milhares de operações aleatórias (inserir, remover e buscar) e chamam `validar()` depois de cada operação. Também conferem os três percursos, o contador de comparações, chaves repetidas, inserção em ordem crescente e decrescente e o limite de altura logarítmica das árvores balanceadas.
 
 ---
 
@@ -236,21 +309,24 @@ pytest tests/
 | Saulo Resende    | [@gitsasa123](https://github.com/gitsasa123) | Rubro-Negra e relatório |
 
 **Disciplina:** Estrutura de Dados
-**Professor(a):** Nome do Professor
-**Instituição:** Nome da Instituição
+**Professor:** Lucas Dominguez Cordeiro
+**Curso:** Engenharia de Computação
+**Instituição:** Instituto Federal Catarinense – Campus São Bento do Sul
 **Semestre:** 2026/2
 
 ---
 
 ## 📚 Referências
 
-- CORMEN, T. H. et al. **Algoritmos: Teoria e Prática**. 3. ed. Elsevier, 2012.
+- DEFFERRARD, M.; BENZI, K.; VANDERGHEYNST, P.; BRESSON, X. **FMA: A Dataset for Music Analysis**. In: 18th International Society for Music Information Retrieval Conference (ISMIR), 2017. Disponível em: <https://arxiv.org/abs/1612.01840>. Dados: <https://github.com/mdeff/fma>.
+- CORMEN, T. H. et al. **Algoritmos: Teoria e Prática**. 3. ed. Rio de Janeiro: Elsevier, 2012. (Rubro-Negra: cap. 13)
+- GOODRICH, M. T.; TAMASSIA, R. **Estruturas de Dados & Algoritmos em Java**. Bookman, 2013.
 - SEDGEWICK, R.; WAYNE, K. **Algorithms**. 4. ed. Addison-Wesley, 2011.
 - Visualizador de árvores: <https://www.cs.usfca.edu/~galles/visualization/>
-- Documentação do Python: <https://docs.python.org/3/>
+- Documentação da API Java: <https://docs.oracle.com/en/java/javase/21/docs/api/>
 
 ---
 
 ## 📄 Licença
 
-Este projeto está licenciado sob a licença **MIT**. Consulte o arquivo [LICENSE](LICENSE) para mais detalhes.
+O código deste projeto está licenciado sob a licença **MIT**. Consulte o arquivo [LICENSE](LICENSE) para mais detalhes. Os dados do FMA seguem a licença **CC BY 4.0**.
