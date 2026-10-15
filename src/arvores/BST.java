@@ -6,10 +6,9 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 
-
 public class BST<K extends Comparable<K>, V> implements Arvore<K, V> {
 
-    private static final class No<K, V> {
+    private static final class No<K, V> implements NoVisivel<K, V> {
         K chave;
         V dados;
         No<K, V> esq;
@@ -18,6 +17,26 @@ public class BST<K extends Comparable<K>, V> implements Arvore<K, V> {
         No(K chave, V dados) {
             this.chave = chave;
             this.dados = dados;
+        }
+
+        @Override
+        public K chave() {
+            return chave;
+        }
+
+        @Override
+        public V dados() {
+            return dados;
+        }
+
+        @Override
+        public NoVisivel<K, V> esquerdo() {
+            return esq;
+        }
+
+        @Override
+        public NoVisivel<K, V> direito() {
+            return dir;
         }
     }
 
@@ -99,7 +118,6 @@ public class BST<K extends Comparable<K>, V> implements Arvore<K, V> {
         }
 
         if (atual.esq != null && atual.dir != null) {
-         
             No<K, V> paiSucessor = atual;
             No<K, V> sucessor = atual.dir;
             while (sucessor.esq != null) {
@@ -203,6 +221,11 @@ public class BST<K extends Comparable<K>, V> implements Arvore<K, V> {
     @Override
     public int tamanho() {
         return tamanho;
+    }
+
+    @Override
+    public NoVisivel<K, V> raizVisivel() {
+        return raiz;
     }
 
     @Override

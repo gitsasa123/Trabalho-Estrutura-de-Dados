@@ -1,17 +1,21 @@
 package arvores;
 
+import java.io.PrintStream;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.function.Supplier;
 
-
 public final class TesteArvore {
 
-    private static int verificacoes = 0;
+    private static PrintStream saida = System.out;
+    private static long verificacoes = 0;
 
     private TesteArvore() {
     }
@@ -24,15 +28,27 @@ public final class TesteArvore {
     }
 
     public static void main(String[] args) {
+        executar(System.out);
+    }
+
+    /**
+     * Roda todos os testes, escrevendo o andamento em {@code destino}.
+     *
+     * @return nº de verificações que passaram
+     * @throws AssertionError na primeira verificação que falhar
+     */
+    public static synchronized long executar(PrintStream destino) {
+        saida = destino;
+        verificacoes = 0;
         testarTudo("BST", BST::new, 0);
         testarTudo("AVL", AVL::new, 1.45);          // altura <= 1,45 * log2(n + 2)
         testarTudo("Rubro-Negra", RubroNegra::new, 2.0);   // altura <= 2 * log2(n + 2)
-        System.out.println("\nOK: " + verificacoes + " verificações passaram.");
+        saida.println("\nOK: " + verificacoes + " verificações passaram.");
+        return verificacoes;
     }
 
-  
     static void testarTudo(String nome, Supplier<Arvore<Integer, String>> fabrica, double fatorAltura) {
-        System.out.println("== " + nome + " ==");
+        saida.println("== " + nome + " ==");
         testeBasico(nome, fabrica);
         testeRepetidaEContador(nome, fabrica);
         for (long seed : new long[] {12345L, 99L, 2026L}) {
@@ -42,6 +58,8 @@ public final class TesteArvore {
         testeAleatorio(nome, fabrica, 31L, 20000, 8);     // árvores minúsculas: casos de borda
         testeOrdenado(nome, fabrica, 20000, fatorAltura);
         testeOrdemInversa(nome, fabrica, 20000, fatorAltura);
+        testeVisao(nome, fabrica);
+        testeVisaoEmCadeia(nome, fabrica, 20000);
     }
 
     private static void testeBasico(String nome, Supplier<Arvore<Integer, String>> fabrica) {
@@ -104,7 +122,7 @@ public final class TesteArvore {
             }
         }
         conferePercursos(nome, a, gabarito, operacoes);
-        System.out.printf("  aleatório (seed %d, %d chaves): ok, altura final %d com %d nós%n",
+        saida.printf("  aleatório (seed %d, %d chaves): ok, altura final %d com %d nós%n",
                 seed, faixaDeChaves, a.altura(), a.tamanho());
     }
 
@@ -117,7 +135,6 @@ public final class TesteArvore {
         List<Integer> pos = a.percorrer(Ordem.POS);
         confere(pre.size() == em.size() && pos.size() == em.size(), nome + ": tamanhos dos percursos, op " + op);
 
-    
         Map<Integer, Integer> posicaoEm = new HashMap<>();
         for (int i = 0; i < em.size(); i++) {
             posicaoEm.put(em.get(i), i);
@@ -148,7 +165,7 @@ public final class TesteArvore {
         confere(a.tamanho() == n && a.validar(), nome + ": inserção ordenada");
         confere(a.buscar(n) != null && a.buscar(1) != null, nome + ": busca após inserção ordenada");
         conferirAlturaLogaritmica(nome, a, n, fatorAltura);
-        System.out.printf("  ordenado (%d chaves): altura %d, comparações até aqui %d%n",
+        saida.printf("  ordenado (%d chaves): altura %d, comparações até aqui %d%n",
                 n, a.altura(), a.contadorComparacoes());
         for (int i = 1; i <= n; i += 2) {
             confere(a.remover(i), nome + ": remover " + i);
@@ -172,6 +189,128 @@ public final class TesteArvore {
             confere(a.remover(i), nome + ": remover (decrescente) " + i);
         }
         confere(a.validar(), nome + ": validar após remoção decrescente");
+    }
+
+    /** A visão somente leitura (raizVisivel) tem que ser idêntica à árvore: mesmas chaves, dados e formas. */
+    private static void testeVisao(String nome, Supplier<Arvore<Integer, String>> fabrica) {
+        Arvore<Integer, String> a = fabrica.get();
+        confere(a.raizVisivel() == null, nome + ": árvore vazia não tem raiz visível");
+
+        Random rnd = new Random(4242);
+        TreeMap<Integer, String> gabarito = new TreeMap<>();
+        for (int i = 0; i < 3000; i++) {
+            int chave = rnd.nextInt(400);
+            if (rnd.nextInt(10) < 6) {
+                a.inserir(chave, "v" + i);
+                gabarito.put(chave, "v" + i);
+            } else {
+                a.remover(chave);
+                gabarito.remove(chave);
+            }
+            if (i % 25 == 0) {
+                conferirVisao(nome, a, gabarito, i);
+            }
+        }
+        conferirVisao(nome, a, gabarito, 3000);
+
+        for (Integer chave : new ArrayList<>(gabarito.keySet())) {
+            a.remover(chave);
+        }
+        confere(a.raizVisivel() == null, nome + ": árvore esvaziada não tem raiz visível");
+    }
+
+    private static void conferirVisao(String nome, Arvore<Integer, String> a,
+                                      TreeMap<Integer, String> gabarito, int op) {
+        NoVisivel<Integer, String> raiz = a.raizVisivel();
+        if (raiz == null) {
+            confere(gabarito.isEmpty() && a.tamanho() == 0, nome + ": raiz visível nula só se vazia, op " + op);
+            return;
+        }
+        boolean usaCor = raiz.cor() != Cor.NENHUMA;
+        boolean usaFator = raiz.fatorBalanceamento().isPresent();
+        confere(!usaCor || raiz.cor() == Cor.PRETO, nome + ": raiz tem que ser preta, op " + op);
+
+        List<Integer> pre = new ArrayList<>();
+        List<Integer> em = new ArrayList<>();
+        List<Integer> pos = new ArrayList<>();
+        int[] medidas = percorrerVisao(nome, raiz, usaCor, usaFator, gabarito, pre, em, pos);
+        confere(medidas[0] == a.altura(), nome + ": altura da visão, op " + op);
+        confere(pre.equals(a.percorrer(Ordem.PRE)), nome + ": pré-ordem da visão, op " + op);
+        confere(em.equals(a.percorrer(Ordem.EM)), nome + ": em-ordem da visão, op " + op);
+        confere(pos.equals(a.percorrer(Ordem.POS)), nome + ": pós-ordem da visão, op " + op);
+        confere(em.size() == a.tamanho(), nome + ": nº de nós da visão, op " + op);
+    }
+
+    /** Percorre a visão (recursivo: as árvores deste teste são rasas) e confere cada nó. */
+    private static int[] percorrerVisao(String nome, NoVisivel<Integer, String> no, boolean usaCor,
+                                        boolean usaFator, Map<Integer, String> gabarito,
+                                        List<Integer> pre, List<Integer> em, List<Integer> pos) {
+        if (no == null) {
+            return new int[] {0, 1};   // altura 0; o NIL é preto e conta 1 na altura negra
+        }
+        confere(no.chave() != null, nome + ": nó visível sem chave (o NIL não pode aparecer)");
+        confere(Objects.equals(no.dados(), gabarito.get(no.chave())), nome + ": dados do nó " + no.chave());
+        confere((no.cor() != Cor.NENHUMA) == usaCor, nome + ": cor deve existir em todos os nós ou em nenhum");
+        confere(no.fatorBalanceamento().isPresent() == usaFator,
+                nome + ": fator deve existir em todos os nós ou em nenhum");
+
+        pre.add(no.chave());
+        int[] esq = percorrerVisao(nome, no.esquerdo(), usaCor, usaFator, gabarito, pre, em, pos);
+        em.add(no.chave());
+        int[] dir = percorrerVisao(nome, no.direito(), usaCor, usaFator, gabarito, pre, em, pos);
+        pos.add(no.chave());
+
+        int altura = 1 + Math.max(esq[0], dir[0]);
+        int alturaNegra = esq[1];
+        if (usaCor) {
+            confere(esq[1] == dir[1], nome + ": alturas negras diferentes no nó " + no.chave());
+            if (no.cor() == Cor.VERMELHO) {
+                confere(corOuPreta(no.esquerdo()) && corOuPreta(no.direito()),
+                        nome + ": nó vermelho " + no.chave() + " com filho vermelho");
+            } else {
+                alturaNegra++;
+            }
+        }
+        if (usaFator) {
+            int fator = no.fatorBalanceamento().getAsInt();
+            confere(fator == esq[0] - dir[0], nome + ": fator do nó " + no.chave() + " diferente da altura real");
+            confere(Math.abs(fator) <= 1, nome + ": nó " + no.chave() + " desbalanceado");
+        }
+        return new int[] {altura, alturaNegra};
+    }
+
+    private static boolean corOuPreta(NoVisivel<Integer, String> filho) {
+        return filho == null || filho.cor() == Cor.PRETO;
+    }
+
+    /** Em cadeia (a BST vira uma lista de n nós) a visão tem que continuar fiel, sem recursão. */
+    private static void testeVisaoEmCadeia(String nome, Supplier<Arvore<Integer, String>> fabrica, int n) {
+        Arvore<Integer, String> a = fabrica.get();
+        for (int i = 1; i <= n; i++) {
+            a.inserir(i, "v" + i);
+        }
+        int nos = 0;
+        int maiorNivel = 0;
+        Deque<NoVisivel<Integer, String>> pilha = new ArrayDeque<>();
+        Deque<Integer> niveis = new ArrayDeque<>();
+        pilha.push(a.raizVisivel());
+        niveis.push(1);
+        while (!pilha.isEmpty()) {
+            NoVisivel<Integer, String> no = pilha.pop();
+            int nivel = niveis.pop();
+            nos++;
+            maiorNivel = Math.max(maiorNivel, nivel);
+            if (no.esquerdo() != null) {
+                pilha.push(no.esquerdo());
+                niveis.push(nivel + 1);
+            }
+            if (no.direito() != null) {
+                pilha.push(no.direito());
+                niveis.push(nivel + 1);
+            }
+        }
+        confere(nos == n, nome + ": nº de nós da visão em cadeia");
+        confere(maiorNivel == a.altura(), nome + ": altura da visão em cadeia");
     }
 
     private static void conferirAlturaLogaritmica(String nome, Arvore<Integer, String> a, int n, double fator) {
