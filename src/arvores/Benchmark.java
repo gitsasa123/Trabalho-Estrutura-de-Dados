@@ -1,8 +1,6 @@
 package arvores;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -13,18 +11,43 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
-import java.util.function.Supplier;
+import java.util.concurrent.CancellationException;
 
+import arvores.ResultadoBenchmark.LinhaDesempenho;
+import arvores.ResultadoBenchmark.PontoAltura;
 
+/**
+ * Benchmark das três árvores: altura × nº de elementos e desempenho (tempo, comparações e altura).
+ * Roda pela linha de comando ({@link #main}) ou, com um {@link Ouvinte}, pela interface gráfica.
+ */
 public final class Benchmark {
 
-    private static final long SEMENTE = 2026L;
+    public static final long SEMENTE = 2026L;
 
-    private enum Cenario { ORDENADO, EMBARALHADO }
+    private static final int TAMANHO_AQUECIMENTO = 5000;
+    private static final int MASCARA_ANDAMENTO = 1023; // avisa o andamento a cada 1024 operações
 
-    private enum Operacao { INSERCAO, BUSCA_EXISTENTE, BUSCA_INEXISTENTE, REMOCAO }
+    /** Parâmetros do benchmark (os mesmos da linha de comando; 0 em N = todas as faixas). */
+    public record Configuracao(Path csv, int nDesempenho, int repeticoes, int passo, int nAltura) {
 
-    private record Fabrica(String nome, Supplier<Arvore<Integer, Faixa>> criar) {
+        public static Configuracao padrao() {
+            return new Configuracao(Path.of("data/faixas.csv"), 50_000, 5, 1000, 0);
+        }
+    }
+
+    /** Quem acompanha a execução: recebe mensagens e andamento, e pode pedir o cancelamento. */
+    public interface Ouvinte {
+
+        void mensagem(String texto);
+
+        /** Andamento geral, de 0 a 1 (aproximado: as etapas não levam o mesmo tempo). */
+        default void progresso(double fracao) {
+        }
+
+        /** Se devolver {@code true}, o benchmark para e lança {@link CancellationException}. */
+        default boolean cancelado() {
+            return false;
+        }
     }
 
     private record Dados(List<CarregadorFaixas.Registro> insercao, List<Integer> chavesBusca,
@@ -34,47 +57,101 @@ public final class Benchmark {
     private record Medida(long tempoNs, long comparacoes, int operacoes, int altura) {
     }
 
-    private static final List<Fabrica> ARVORES = List.of(
-            new Fabrica("BST", BST::new),
-            new Fabrica("AVL", AVL::new),
-            new Fabrica("Rubro-Negra", RubroNegra::new));
+    /** Converte "tarefa X, Y% feita" em andamento geral e confere se pediram para cancelar. */
+    private static final class Andamento {
+        private final Ouvinte ouvinte;
+        private final double totalTarefas;
+        private double concluidas;
+
+        Andamento(Ouvinte ouvinte, double totalTarefas) {
+            this.ouvinte = ouvinte;
+            this.totalTarefas = totalTarefas;
+        }
+
+        void dentroDaTarefa(double fracao) {
+            conferirCancelamento();
+            ouvinte.progresso(Math.min(1.0, (concluidas + fracao) / totalTarefas));
+        }
+
+        void tarefaConcluida() {
+            concluidas++;
+            ouvinte.progresso(Math.min(1.0, concluidas / totalTarefas));
+        }
+
+        void conferirCancelamento() {
+            if (ouvinte.cancelado()) {
+                throw new CancellationException("Benchmark cancelado");
+            }
+        }
+    }
 
     private Benchmark() {
     }
 
-    public static void main(String[] args) throws IOException {
-        Path csv = Path.of(args.length > 0 ? args[0] : "data/faixas.csv");
-        int nDesempenho = args.length > 1 ? Integer.parseInt(args[1]) : 50_000;
-        int repeticoes = args.length > 2 ? Integer.parseInt(args[2]) : 5;
-        int passo = args.length > 3 ? Integer.parseInt(args[3]) : 1000;
-        Path saida = Path.of(args.length > 4 ? args[4] : "results/tabelas");
-        int nAltura = args.length > 5 ? Integer.parseInt(args[5]) : 0;
+    // ------------------------------------------------------------------ linha de comando
 
-        System.out.println("Lendo " + csv + " ...");
-        List<CarregadorFaixas.Registro> todos = CarregadorFaixas.carregar(csv, 0, false, SEMENTE);
+    public static void main(String[] args) throws IOException {
+        Configuracao padrao = Configuracao.padrao();
+        Configuracao cfg = new Configuracao(
+                Path.of(args.length > 0 ? args[0] : padrao.csv().toString()),
+                args.length > 1 ? Integer.parseInt(args[1]) : padrao.nDesempenho(),
+                args.length > 2 ? Integer.parseInt(args[2]) : padrao.repeticoes(),
+                args.length > 3 ? Integer.parseInt(args[3]) : padrao.passo(),
+                args.length > 5 ? Integer.parseInt(args[5]) : padrao.nAltura());
+        Path saida = Path.of(args.length > 4 ? args[4] : "results/tabelas");
+
+        ResultadoBenchmark resultado = executar(cfg, System.out::println);
+        resultado.gravar(saida);
+
+        imprimirResumo(resultado);
+        System.out.println("\nPronto. CSVs em " + saida.toAbsolutePath());
+        System.out.println("Agora gere os gráficos: python scripts/gerar_graficos.py");
+    }
+
+    private static void imprimirResumo(ResultadoBenchmark resultado) {
+        System.out.println("\n== Resumo (tempo médio em ms | comparações | altura) ==");
+        for (LinhaDesempenho l : resultado.desempenho()) {
+            System.out.printf(Locale.ROOT, "  %-11s %-12s %-18s %12.4f ms %14d comp. altura %d%n",
+                    l.cenario(), l.arvore().nome(), l.operacao(), l.tempoMsMedio(), l.comparacoes(), l.altura());
+        }
+    }
+
+    // ------------------------------------------------------------------ execução
+
+    /**
+     * Roda os dois experimentos e devolve as medidas (não grava nada em disco).
+     *
+     * @throws CancellationException se o {@code ouvinte} pedir o cancelamento
+     */
+    public static ResultadoBenchmark executar(Configuracao cfg, Ouvinte ouvinte) throws IOException {
+        if (cfg.repeticoes() < 1 || cfg.passo() < 1) {
+            throw new IllegalArgumentException("repetições e passo devem ser pelo menos 1");
+        }
+        ouvinte.mensagem("Lendo " + cfg.csv() + " ...");
+        List<CarregadorFaixas.Registro> todos = CarregadorFaixas.carregar(cfg.csv(), 0, false, SEMENTE);
         todos.sort(Comparator.comparingInt(CarregadorFaixas.Registro::chave));
         for (int i = 1; i < todos.size(); i++) {
             if (todos.get(i).chave() == todos.get(i - 1).chave()) {
                 throw new IllegalStateException("Chave repetida no dataset: " + todos.get(i).chave());
             }
         }
-        System.out.println(todos.size() + " faixas, track_id de " + todos.get(0).chave()
+        if (todos.size() < 2) {
+            throw new IllegalStateException("O dataset precisa de pelo menos 2 faixas");
+        }
+        ouvinte.mensagem(todos.size() + " faixas, track_id de " + todos.get(0).chave()
                 + " a " + todos.get(todos.size() - 1).chave());
         if (todos.size() < 10_000) {
-            System.out.println("ATENÇÃO: o enunciado exige no mínimo 10.000 registros!");
+            ouvinte.mensagem("ATENÇÃO: o enunciado exige no mínimo 10.000 registros!");
         }
 
-        Files.createDirectories(saida);
-        gravarAmbiente(saida.resolve("ambiente.txt"), csv, todos.size(), nDesempenho, repeticoes, passo);
+        List<String> ambiente = descreverAmbiente(cfg, todos.size());
+        int tarefas = TipoArvore.values().length * Cenario.values().length * (1 + cfg.repeticoes());
+        Andamento andamento = new Andamento(ouvinte, tarefas);
 
-        List<CarregadorFaixas.Registro> baseAltura = recorte(todos, nAltura);
-        experimentoAltura(baseAltura, passo, saida.resolve("altura_incremental.csv"));
-
-        List<CarregadorFaixas.Registro> baseDesempenho = recorte(todos, nDesempenho);
-        experimentoDesempenho(baseDesempenho, repeticoes, saida.resolve("desempenho.csv"));
-
-        System.out.println("\nPronto. CSVs em " + saida.toAbsolutePath());
-        System.out.println("Agora gere os gráficos: python scripts/gerar_graficos.py");
+        List<PontoAltura> alturas = experimentoAltura(recorte(todos, cfg.nAltura()), cfg.passo(), ouvinte, andamento);
+        List<LinhaDesempenho> desempenho = experimentoDesempenho(recorte(todos, cfg.nDesempenho()),
+                cfg.repeticoes(), ouvinte, andamento);
+        return new ResultadoBenchmark(desempenho, alturas, ambiente);
     }
 
     private static List<CarregadorFaixas.Registro> recorte(List<CarregadorFaixas.Registro> todos, int n) {
@@ -82,64 +159,89 @@ public final class Benchmark {
         return new ArrayList<>(todos.subList(0, tam));
     }
 
+    private static List<String> descreverAmbiente(Configuracao cfg, int total) {
+        Runtime jvm = Runtime.getRuntime();
+        return List.of(
+                "data/hora: " + LocalDateTime.now(),
+                "java: " + System.getProperty("java.version") + " (" + System.getProperty("java.vm.name") + ")",
+                "sistema: " + System.getProperty("os.name") + " " + System.getProperty("os.arch"),
+                "processadores logicos: " + jvm.availableProcessors(),
+                "memoria maxima da JVM (MB): " + jvm.maxMemory() / (1024 * 1024),
+                "dataset: " + cfg.csv() + " (" + total + " faixas)",
+                "N do experimento de desempenho: " + cfg.nDesempenho(),
+                "repeticoes: " + cfg.repeticoes(),
+                "passo da altura: " + cfg.passo(),
+                "semente: " + SEMENTE);
+    }
 
-    private static void experimentoAltura(List<CarregadorFaixas.Registro> base, int passo, Path arquivo)
-            throws IOException {
-        System.out.println("\n== Experimento 1: altura x nº de elementos (" + base.size()
+    // ------------------------------------------------------------------ experimento 1: altura
+
+    private static List<PontoAltura> experimentoAltura(List<CarregadorFaixas.Registro> base, int passo,
+                                                       Ouvinte ouvinte, Andamento andamento) {
+        ouvinte.mensagem("\n== Experimento 1: altura x nº de elementos (" + base.size()
                 + " faixas, a cada " + passo + " inserções) ==");
-        StringBuilder csv = new StringBuilder("cenario,arvore,elementos,altura\n");
+        List<PontoAltura> pontos = new ArrayList<>();
 
         for (Cenario cenario : Cenario.values()) {
             List<CarregadorFaixas.Registro> ordem = new ArrayList<>(base);
             if (cenario == Cenario.EMBARALHADO) {
                 Collections.shuffle(ordem, new Random(SEMENTE));
             }
-            for (Fabrica f : ARVORES) {
+            for (TipoArvore tipo : TipoArvore.values()) {
                 long inicio = System.nanoTime();
-                Arvore<Integer, Faixa> arvore = f.criar().get();
+                Arvore<Integer, Faixa> arvore = tipo.criar();
                 int inseridos = 0;
                 for (CarregadorFaixas.Registro r : ordem) {
                     arvore.inserir(r.chave(), r.dados());
                     inseridos++;
+                    if ((inseridos & MASCARA_ANDAMENTO) == 0) {
+                        andamento.dentroDaTarefa((double) inseridos / ordem.size());
+                    }
                     if (inseridos % passo == 0 || inseridos == ordem.size()) {
-                        csv.append(String.format(Locale.ROOT, "%s,%s,%d,%d%n",
-                                cenario, f.nome(), inseridos, arvore.altura()));
+                        pontos.add(new PontoAltura(cenario, tipo, inseridos, arvore.altura()));
                     }
                 }
-                System.out.printf(Locale.ROOT, "  %-11s %-12s altura final %6d  (%.1f s)%n",
-                        cenario, f.nome(), arvore.altura(), (System.nanoTime() - inicio) / 1e9);
+                andamento.tarefaConcluida();
+                ouvinte.mensagem(String.format(Locale.ROOT, "  %-11s %-12s altura final %6d  (%.1f s)",
+                        cenario, tipo.nome(), arvore.altura(), (System.nanoTime() - inicio) / 1e9));
             }
         }
-        Files.writeString(arquivo, csv.toString(), StandardCharsets.UTF_8);
+        return pontos;
     }
 
+    // ------------------------------------------------------------------ experimento 2: desempenho
 
-    private static void experimentoDesempenho(List<CarregadorFaixas.Registro> base, int repeticoes, Path arquivo)
-            throws IOException {
+    private static List<LinhaDesempenho> experimentoDesempenho(List<CarregadorFaixas.Registro> base,
+                                                               int repeticoes, Ouvinte ouvinte,
+                                                               Andamento andamento) {
         int n = base.size();
-        System.out.println("\n== Experimento 2: desempenho (" + n + " faixas, " + repeticoes
+        if (n < 2) {
+            throw new IllegalArgumentException("O experimento de desempenho precisa de pelo menos 2 faixas");
+        }
+        ouvinte.mensagem("\n== Experimento 2: desempenho (" + n + " faixas, " + repeticoes
                 + " repetições por medição) ==");
 
-        System.out.println("  aquecendo a JVM ...");
-        List<CarregadorFaixas.Registro> pequeno = recorte(base, 5000);
+        ouvinte.mensagem("  aquecendo a JVM ...");
+        List<CarregadorFaixas.Registro> pequeno = recorte(base, TAMANHO_AQUECIMENTO);
         for (Cenario cenario : Cenario.values()) {
             Dados d = montarDados(pequeno, cenario);
-            for (Fabrica f : ARVORES) {
-                executar(f, d);
+            for (TipoArvore tipo : TipoArvore.values()) {
+                andamento.conferirCancelamento();
+                executar(tipo, d, null);
             }
         }
 
-        StringBuilder csv = new StringBuilder("cenario,arvore,n,operacao,operacoes,"
-                + "tempo_ms_medio,tempo_ms_desvio,comparacoes,comparacoes_por_operacao,altura\n");
-
+        List<LinhaDesempenho> linhas = new ArrayList<>();
         for (Cenario cenario : Cenario.values()) {
             Dados dados = montarDados(base, cenario);
-            for (Fabrica f : ARVORES) {
+            for (TipoArvore tipo : TipoArvore.values()) {
                 long inicio = System.nanoTime();
                 Medida[][] medidas = new Medida[repeticoes][];
                 for (int rep = 0; rep < repeticoes; rep++) {
+                    andamento.conferirCancelamento();
                     System.gc();
-                    medidas[rep] = executar(f, dados);
+                    medidas[rep] = executar(tipo, dados, andamento);
+                    andamento.tarefaConcluida();
                 }
                 for (Operacao op : Operacao.values()) {
                     double[] tempos = new double[repeticoes];
@@ -147,16 +249,14 @@ public final class Benchmark {
                         tempos[rep] = medidas[rep][op.ordinal()].tempoNs() / 1e6;
                     }
                     Medida m = medidas[0][op.ordinal()]; // comparações e altura não variam entre repetições
-                    csv.append(String.format(Locale.ROOT, "%s,%s,%d,%s,%d,%.4f,%.4f,%d,%.2f,%d%n",
-                            cenario, f.nome(), n, op, m.operacoes(), media(tempos), desvio(tempos),
-                            m.comparacoes(), (double) m.comparacoes() / m.operacoes(), m.altura()));
+                    linhas.add(new LinhaDesempenho(cenario, tipo, n, op, m.operacoes(), media(tempos),
+                            desvio(tempos), m.comparacoes(), (double) m.comparacoes() / m.operacoes(), m.altura()));
                 }
-                System.out.printf(Locale.ROOT, "  %-11s %-12s ok (%.1f s)%n",
-                        cenario, f.nome(), (System.nanoTime() - inicio) / 1e9);
+                ouvinte.mensagem(String.format(Locale.ROOT, "  %-11s %-12s ok (%.1f s)",
+                        cenario, tipo.nome(), (System.nanoTime() - inicio) / 1e9));
             }
         }
-        Files.writeString(arquivo, csv.toString(), StandardCharsets.UTF_8);
-        imprimirResumo(csv.toString());
+        return linhas;
     }
 
     private static Dados montarDados(List<CarregadorFaixas.Registro> base, Cenario cenario) {
@@ -180,8 +280,17 @@ public final class Benchmark {
         int max = chaves.get(n - 1);
         Random rnd = new Random(SEMENTE + 2);
         List<Integer> inexistentes = new ArrayList<>(n);
+        long amplitude = (long) max - min + n + 1;
         while (inexistentes.size() < n) {
-            int k = min + rnd.nextInt(max - min + n + 1);
+            long candidato = (amplitude <= Integer.MAX_VALUE) ? min + rnd.nextInt((int) amplitude)
+                    : min + rnd.nextLong(amplitude);
+            if (candidato > Integer.MAX_VALUE) {
+                candidato -= amplitude;   // chaves perto do limite de int: usa o lado de baixo
+            }
+            if (candidato < Integer.MIN_VALUE || candidato > Integer.MAX_VALUE) {
+                continue;
+            }
+            int k = (int) candidato;
             if (!existentes.contains(k)) {
                 inexistentes.add(k);
             }
@@ -195,58 +304,85 @@ public final class Benchmark {
         return new Dados(insercao, chavesBusca, inexistentes, chavesRemocao);
     }
 
-    /** Uma execução completa: inserir tudo, buscar existentes, buscar inexistentes, remover metade. */
-    private static Medida[] executar(Fabrica f, Dados d) {
-        Arvore<Integer, Faixa> a = f.criar().get();
+    /**
+     * Uma execução completa: inserir tudo, buscar existentes, buscar inexistentes, remover metade.
+     * O {@code andamento} pode ser {@code null} (aquecimento da JVM).
+     */
+    private static Medida[] executar(TipoArvore tipo, Dados d, Andamento andamento) {
+        Arvore<Integer, Faixa> a = tipo.criar();
+        String nome = tipo.nome();
         Medida[] r = new Medida[Operacao.values().length];
 
         a.zerarContador();
+        int feitas = 0;
         long t0 = System.nanoTime();
         for (CarregadorFaixas.Registro x : d.insercao()) {
             a.inserir(x.chave(), x.dados());
+            if ((++feitas & MASCARA_ANDAMENTO) == 0) {
+                avisar(andamento, Operacao.INSERCAO, (double) feitas / d.insercao().size());
+            }
         }
         long t1 = System.nanoTime();
         r[Operacao.INSERCAO.ordinal()] = new Medida(t1 - t0, a.contadorComparacoes(), d.insercao().size(), a.altura());
-        exigir(a.tamanho() == d.insercao().size(), f.nome() + ": tamanho errado após inserir");
+        exigir(a.tamanho() == d.insercao().size(), nome + ": tamanho errado após inserir");
 
         a.zerarContador();
         int achou = 0;
+        feitas = 0;
         t0 = System.nanoTime();
         for (int k : d.chavesBusca()) {
             if (a.buscar(k) != null) {
                 achou++;
             }
+            if ((++feitas & MASCARA_ANDAMENTO) == 0) {
+                avisar(andamento, Operacao.BUSCA_EXISTENTE, (double) feitas / d.chavesBusca().size());
+            }
         }
         t1 = System.nanoTime();
         r[Operacao.BUSCA_EXISTENTE.ordinal()] = new Medida(t1 - t0, a.contadorComparacoes(), d.chavesBusca().size(), a.altura());
-        exigir(achou == d.chavesBusca().size(), f.nome() + ": busca não encontrou chave existente");
+        exigir(achou == d.chavesBusca().size(), nome + ": busca não encontrou chave existente");
 
         a.zerarContador();
         achou = 0;
+        feitas = 0;
         t0 = System.nanoTime();
         for (int k : d.chavesInexistentes()) {
             if (a.buscar(k) != null) {
                 achou++;
             }
+            if ((++feitas & MASCARA_ANDAMENTO) == 0) {
+                avisar(andamento, Operacao.BUSCA_INEXISTENTE, (double) feitas / d.chavesInexistentes().size());
+            }
         }
         t1 = System.nanoTime();
         r[Operacao.BUSCA_INEXISTENTE.ordinal()] = new Medida(t1 - t0, a.contadorComparacoes(), d.chavesInexistentes().size(), a.altura());
-        exigir(achou == 0, f.nome() + ": busca encontrou chave que não existe");
+        exigir(achou == 0, nome + ": busca encontrou chave que não existe");
 
         a.zerarContador();
         int removidos = 0;
+        feitas = 0;
         t0 = System.nanoTime();
         for (int k : d.chavesRemocao()) {
             if (a.remover(k)) {
                 removidos++;
             }
+            if ((++feitas & MASCARA_ANDAMENTO) == 0) {
+                avisar(andamento, Operacao.REMOCAO, (double) feitas / d.chavesRemocao().size());
+            }
         }
         t1 = System.nanoTime();
         r[Operacao.REMOCAO.ordinal()] = new Medida(t1 - t0, a.contadorComparacoes(), d.chavesRemocao().size(), a.altura());
-        exigir(removidos == d.chavesRemocao().size(), f.nome() + ": remoção falhou");
-        exigir(a.tamanho() == d.insercao().size() - removidos, f.nome() + ": tamanho errado após remover");
-        exigir(a.validar(), f.nome() + ": árvore inválida após o benchmark");
+        exigir(removidos == d.chavesRemocao().size(), nome + ": remoção falhou");
+        exigir(a.tamanho() == d.insercao().size() - removidos, nome + ": tamanho errado após remover");
+        exigir(a.validar(), nome + ": árvore inválida após o benchmark");
         return r;
+    }
+
+    /** As quatro operações de uma execução dividem igualmente o andamento da tarefa. */
+    private static void avisar(Andamento andamento, Operacao operacao, double fracaoDaOperacao) {
+        if (andamento != null) {
+            andamento.dentroDaTarefa((operacao.ordinal() + fracaoDaOperacao) / Operacao.values().length);
+        }
     }
 
     private static void exigir(boolean condicao, String mensagem) {
@@ -254,7 +390,6 @@ public final class Benchmark {
             throw new IllegalStateException("Benchmark inconsistente: " + mensagem);
         }
     }
-
 
     private static double media(double[] v) {
         double soma = 0;
@@ -274,30 +409,5 @@ public final class Benchmark {
             soma += (x - m) * (x - m);
         }
         return Math.sqrt(soma / (v.length - 1));
-    }
-
-    private static void imprimirResumo(String csv) {
-        System.out.println("\n== Resumo (tempo médio em ms | comparações | altura) ==");
-        String[] linhas = csv.split("\n");
-        for (int i = 1; i < linhas.length; i++) {
-            String[] c = linhas[i].split(",");
-            System.out.printf(Locale.ROOT, "  %-11s %-12s %-18s %12s ms %14s comp. altura %s%n",
-                    c[0], c[1], c[3], c[5], c[7], c[9]);
-        }
-    }
-
-    private static void gravarAmbiente(Path arquivo, Path csv, int total, int nDesempenho, int repeticoes,
-                                       int passo) throws IOException {
-        String texto = "data/hora: " + LocalDateTime.now() + "\n"
-                + "java: " + System.getProperty("java.version") + " (" + System.getProperty("java.vm.name") + ")\n"
-                + "sistema: " + System.getProperty("os.name") + " " + System.getProperty("os.arch") + "\n"
-                + "processadores logicos: " + Runtime.getRuntime().availableProcessors() + "\n"
-                + "memoria maxima da JVM (MB): " + Runtime.getRuntime().maxMemory() / (1024 * 1024) + "\n"
-                + "dataset: " + csv + " (" + total + " faixas)\n"
-                + "N do experimento de desempenho: " + nDesempenho + "\n"
-                + "repeticoes: " + repeticoes + "\n"
-                + "passo da altura: " + passo + "\n"
-                + "semente: " + SEMENTE + "\n";
-        Files.writeString(arquivo, texto, StandardCharsets.UTF_8);
     }
 }

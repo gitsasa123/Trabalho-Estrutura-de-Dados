@@ -3,19 +3,48 @@ package arvores;
 import java.util.ArrayList;
 import java.util.List;
 
-
 public class RubroNegra<K extends Comparable<K>, V> implements Arvore<K, V> {
 
     private static final boolean VERMELHO = true;
     private static final boolean PRETO = false;
 
-    private static final class No<K, V> {
+    private static final class No<K, V> implements NoVisivel<K, V> {
         K chave;
         V dados;
         boolean cor = VERMELHO;   // todo nó novo entra vermelho
         No<K, V> esq;
         No<K, V> dir;
         No<K, V> pai;
+
+        // O NIL é o único nó sem chave: para quem olha de fora, ele equivale a "sem filho".
+        private NoVisivel<K, V> real(No<K, V> filho) {
+            return (filho.chave == null) ? null : filho;
+        }
+
+        @Override
+        public K chave() {
+            return chave;
+        }
+
+        @Override
+        public V dados() {
+            return dados;
+        }
+
+        @Override
+        public NoVisivel<K, V> esquerdo() {
+            return real(esq);
+        }
+
+        @Override
+        public NoVisivel<K, V> direito() {
+            return real(dir);
+        }
+
+        @Override
+        public Cor cor() {
+            return (cor == VERMELHO) ? Cor.VERMELHO : Cor.PRETO;
+        }
     }
 
     private final No<K, V> nil = new No<>(); // sentinela: representa todas as folhas vazias
@@ -36,7 +65,6 @@ public class RubroNegra<K extends Comparable<K>, V> implements Arvore<K, V> {
         return a.compareTo(b);
     }
 
-  
     private void rotacaoEsquerda(No<K, V> x) {
         No<K, V> y = x.dir;
         x.dir = y.esq;
@@ -74,7 +102,6 @@ public class RubroNegra<K extends Comparable<K>, V> implements Arvore<K, V> {
         y.pai = x;
     }
 
-
     @Override
     public void inserir(K chave, V dados) {
         No<K, V> pai = nil;
@@ -109,7 +136,6 @@ public class RubroNegra<K extends Comparable<K>, V> implements Arvore<K, V> {
         consertarInsercao(z);
     }
 
-  
     private void consertarInsercao(No<K, V> z) {
         while (z.pai.cor == VERMELHO) {
             if (z.pai == z.pai.pai.esq) {
@@ -149,7 +175,6 @@ public class RubroNegra<K extends Comparable<K>, V> implements Arvore<K, V> {
         raiz.cor = PRETO; // regra 2
     }
 
-
     private No<K, V> encontrar(K chave) {
         No<K, V> atual = raiz;
         while (atual != nil) {
@@ -167,7 +192,6 @@ public class RubroNegra<K extends Comparable<K>, V> implements Arvore<K, V> {
         No<K, V> n = encontrar(chave);
         return (n == nil) ? null : n.dados;
     }
-
 
     private void transplantar(No<K, V> u, No<K, V> v) {
         if (u.pai == nil) {
@@ -222,14 +246,12 @@ public class RubroNegra<K extends Comparable<K>, V> implements Arvore<K, V> {
         }
         tamanho--;
 
-        
         if (corOriginalDeY == PRETO) {
             consertarRemocao(x);
         }
         nil.pai = nil; // o NIL pode ter ficado com um pai temporário; limpamos
         return true;
     }
-
 
     private void consertarRemocao(No<K, V> x) {
         while (x != raiz && x.cor == PRETO) {
@@ -286,7 +308,6 @@ public class RubroNegra<K extends Comparable<K>, V> implements Arvore<K, V> {
         x.cor = PRETO;
     }
 
-
     @Override
     public int altura() {
         return altura(raiz);
@@ -332,6 +353,10 @@ public class RubroNegra<K extends Comparable<K>, V> implements Arvore<K, V> {
         return tamanho;
     }
 
+    @Override
+    public NoVisivel<K, V> raizVisivel() {
+        return (raiz == nil) ? null : raiz;
+    }
 
     @Override
     public boolean validar() {

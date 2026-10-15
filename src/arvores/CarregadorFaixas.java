@@ -18,24 +18,29 @@ public final class CarregadorFaixas {
     private CarregadorFaixas() {
     }
 
-  
     public static List<Registro> carregar(Path caminho, int limite, boolean embaralhar, long seed)
             throws IOException {
         List<Registro> registros = new ArrayList<>();
         try (BufferedReader leitor = Files.newBufferedReader(caminho, StandardCharsets.UTF_8)) {
             leitor.readLine(); // cabeçalho
+            int numeroLinha = 1;
             String linha;
             while ((limite <= 0 || registros.size() < limite) && (linha = leitor.readLine()) != null) {
+                numeroLinha++;
                 if (linha.isBlank()) {
                     continue;
                 }
                 List<String> c = dividirLinhaCsv(linha);
                 if (c.size() < 6) {
-                    throw new IOException("Linha com campos faltando: " + linha);
+                    throw new IOException("Linha " + numeroLinha + " com campos faltando: " + linha);
                 }
-                Faixa faixa = new Faixa(c.get(1), c.get(2), c.get(3),
-                        Long.parseLong(c.get(4)), Integer.parseInt(c.get(5)));
-                registros.add(new Registro(Integer.parseInt(c.get(0)), faixa));
+                try {
+                    Faixa faixa = new Faixa(c.get(1), c.get(2), c.get(3),
+                            Long.parseLong(c.get(4)), Integer.parseInt(c.get(5)));
+                    registros.add(new Registro(Integer.parseInt(c.get(0)), faixa));
+                } catch (NumberFormatException e) {
+                    throw new IOException("Número inválido na linha " + numeroLinha + ": " + linha, e);
+                }
             }
         }
         if (embaralhar) {

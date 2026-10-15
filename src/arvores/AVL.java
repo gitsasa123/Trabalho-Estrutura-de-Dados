@@ -2,10 +2,11 @@ package arvores;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalInt;
 
 public class AVL<K extends Comparable<K>, V> implements Arvore<K, V> {
 
-    private static final class No<K, V> {
+    private static final class No<K, V> implements NoVisivel<K, V> {
         K chave;
         V dados;
         No<K, V> esq;
@@ -15,6 +16,33 @@ public class AVL<K extends Comparable<K>, V> implements Arvore<K, V> {
         No(K chave, V dados) {
             this.chave = chave;
             this.dados = dados;
+        }
+
+        @Override
+        public K chave() {
+            return chave;
+        }
+
+        @Override
+        public V dados() {
+            return dados;
+        }
+
+        @Override
+        public NoVisivel<K, V> esquerdo() {
+            return esq;
+        }
+
+        @Override
+        public NoVisivel<K, V> direito() {
+            return dir;
+        }
+
+        @Override
+        public OptionalInt fatorBalanceamento() {
+            int he = (esq == null) ? 0 : esq.altura;
+            int hd = (dir == null) ? 0 : dir.altura;
+            return OptionalInt.of(he - hd);
         }
     }
 
@@ -44,7 +72,6 @@ public class AVL<K extends Comparable<K>, V> implements Arvore<K, V> {
         return (n == null) ? 0 : alt(n.esq) - alt(n.dir);
     }
 
-
     private No<K, V> rotacaoDireita(No<K, V> y) {
         No<K, V> x = y.esq;
         y.esq = x.dir;
@@ -64,7 +91,6 @@ public class AVL<K extends Comparable<K>, V> implements Arvore<K, V> {
         return y;
     }
 
-  
     private No<K, V> balancear(No<K, V> n) {
         atualizarAltura(n);
         int fb = fator(n);
@@ -82,7 +108,6 @@ public class AVL<K extends Comparable<K>, V> implements Arvore<K, V> {
         }
         return n;                           // já estava balanceado
     }
-
 
     @Override
     public void inserir(K chave, V dados) {
@@ -123,7 +148,6 @@ public class AVL<K extends Comparable<K>, V> implements Arvore<K, V> {
         return null;
     }
 
-
     @Override
     public boolean remover(K chave) {
         removeu = false;
@@ -151,7 +175,7 @@ public class AVL<K extends Comparable<K>, V> implements Arvore<K, V> {
             if (no.dir == null) {
                 return no.esq;
             }
-            
+
             No<K, V> sucessor = no.dir;
             while (sucessor.esq != null) {
                 sucessor = sucessor.esq;
@@ -170,7 +194,6 @@ public class AVL<K extends Comparable<K>, V> implements Arvore<K, V> {
         no.esq = removerMenor(no.esq);
         return balancear(no);
     }
-
 
     @Override
     public int altura() {
@@ -210,6 +233,10 @@ public class AVL<K extends Comparable<K>, V> implements Arvore<K, V> {
         return tamanho;
     }
 
+    @Override
+    public NoVisivel<K, V> raizVisivel() {
+        return raiz;
+    }
 
     @Override
     public boolean validar() {

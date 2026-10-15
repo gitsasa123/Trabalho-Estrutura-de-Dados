@@ -12,6 +12,7 @@
 - [Sobre o Projeto](#-sobre-o-projeto)
 - [Objetivos](#-objetivos)
 - [Estruturas Implementadas](#-estruturas-implementadas)
+- [Interface Gráfica](#-interface-gráfica)
 - [Conjuntos de Dados](#-conjuntos-de-dados)
 - [Requisitos](#-requisitos)
 - [Como Executar](#-como-executar)
@@ -29,8 +30,9 @@ Este projeto implementa três árvores de busca em Java — **BST** (árvore bin
 
 Usamos metadados reais de faixas do Free Music Archive (chave: `track_id`) para comparar **tempo de execução, número de comparações e altura** de cada estrutura em cenários práticos, como inserção em ordem crescente (pior caso da BST) e em ordem aleatória (caso médio), e assim entender as vantagens e desvantagens de cada uma.
 
----
+Tudo isso pode ser explorado numa **interface gráfica** que desenha as três árvores de verdade, aplica cada operação às três ao mesmo tempo e mostra o benchmark com gráficos (veja [Interface Gráfica](#-interface-gráfica)).
 
+---
 
 ## 🎯 Objetivos
 
@@ -39,6 +41,7 @@ Usamos metadados reais de faixas do Free Music Archive (chave: `track_id`) para 
 - Aplicar as estruturas a um **conjunto de dados real** (mínimo de 10.000 registros).
 - Comparar **tempo de execução, número de comparações e altura** das árvores.
 - Documentar as características de cada estrutura em cenários práticos.
+- **Visualizar** as árvores e as operações numa interface gráfica interativa.
 
 ---
 
@@ -59,6 +62,7 @@ Usamos metadados reais de faixas do Free Music Archive (chave: `track_id`) para 
 - `percorrer(Ordem.PRE | Ordem.EM | Ordem.POS)` → lista de chaves
 - `contadorComparacoes()` e `zerarContador()`
 - `tamanho()` e `validar()` (verifica as propriedades da estrutura; usado nos testes)
+- `raizVisivel()` → visão **somente leitura** dos nós (`NoVisivel`: chave, dados, filhos, cor ou fator de balanceamento), que a interface gráfica usa para desenhar a árvore sem expor as classes internas
 
 ### Convenções (iguais nas três árvores)
 
@@ -66,6 +70,50 @@ Usamos metadados reais de faixas do Free Music Archive (chave: `track_id`) para 
 - **Altura:** número de nós do caminho mais longo da raiz até uma folha (árvore vazia = 0; um único nó = 1).
 - **Comparações:** cada comparação entre chaves (`compareTo`) feita em `inserir`, `buscar` e `remover` incrementa o contador.
 - **BST iterativa:** todos os métodos da BST usam laços (e não recursão), pois com chaves em ordem crescente a altura chega a ~100 mil e a recursão estouraria a pilha.
+
+---
+
+## 💻 Interface Gráfica
+
+O programa abre numa janela (Java Swing, sem bibliotecas externas) com três abas: **Árvores**, **Benchmark** e **Testes**. O visual é próprio do projeto (claro, de cantos arredondados, com ícones desenhados em código), e a aba *Árvores* tem a coluna de controles à esquerda, as três árvores lado a lado e o registro das operações embaixo.
+
+![As três árvores depois de inserir 1 a 15 em ordem crescente](docs/img/gui-arvores.png)
+
+### Aba "Árvores"
+
+As árvores são **desenhadas a partir das árvores de verdade** e toda operação é aplicada às três ao mesmo tempo:
+
+| Recurso | O que faz |
+|---------|-----------|
+| **Inserir / Buscar / Remover** | Digite o `track_id` e use os botões (ou Enter). O caminho percorrido acende nó por nó; as rotações da AVL e as mudanças de cor da Rubro-Negra aparecem como animação. O registro mostra quantas **comparações** cada árvore fez (em verde, a menor) e a altura depois da operação. |
+| **Demonstrações** | *Inserir sequência* (por exemplo, 1 a 15 em ordem crescente: a BST vira uma lista, enquanto AVL e Rubro-Negra se rearranjam) e *Inserir aleatórias* (o caso médio). |
+| **Dataset** | Carrega as faixas de `data/faixas.csv` nas três árvores, em segundo plano, com barra de progresso e botão **Cancelar** (se cancelar, as árvores continuam como estavam). Árvores grandes são **resumidas**: cada triângulo é uma subárvore escondida, e um clique abre só aquela subárvore. O caminho de uma busca é sempre mostrado inteiro. |
+| **Percursos** | Pré-ordem, em ordem e pós-ordem: os nós são numerados na ordem de visita e as listas aparecem na aba *Percursos*. |
+| **Validar** | Chama `validar()` nas três árvores (ordem das chaves, altura e fator de balanceamento, cores). |
+| **Faixa em destaque** | Clique num nó (ou busque uma chave) para ver título, artista, gênero, ouvintes e duração. A aba *Faixas carregadas* lista o dataset com filtro; duplo clique numa faixa busca a chave. |
+| **Desenho** | Arraste para mover, rodinha do mouse para zoom, duplo clique no fundo para enquadrar, botão direito para um menu (buscar, remover, abrir subárvore). O botão de expandir, no cabeçalho de cada árvore, mostra só aquela árvore. Em *Exibição* dá para desligar a animação, mudar a velocidade e os limites de níveis. |
+
+Com chaves em ordem crescente a diferença aparece na hora: depois de inserir 1 a 15, a BST tem altura 15 e 105 comparações, a AVL tem altura 4 e 45 comparações, e a Rubro-Negra tem altura 6 e 53.
+
+![Dataset carregado e uma busca: o caminho até a chave aparece inteiro](docs/img/gui-dataset.png)
+
+### Aba "Benchmark"
+
+Roda o mesmo benchmark da linha de comando (`Benchmark`), com andamento na tela e botão **Cancelar**, ou abre os resultados já salvos em `results/tabelas` (eles aparecem assim que a aba é aberta). Mostra os gráficos de **tempo**, **comparações** e **altura** (os mesmos de `results/graficos`, desenhados pela própria interface) e as tabelas, e permite **exportar** os CSVs e os gráficos em PNG (pergunta antes de substituir arquivos). *Teste rápido* usa 10.000 faixas e 2 repetições e termina em poucos segundos.
+
+![Benchmark: tempo de cada operação nos dois cenários](docs/img/gui-benchmark.png)
+
+### Aba "Testes"
+
+Executa `TesteArvore` e `TesteGui` e mostra o resultado ao vivo.
+
+### Como a visualização funciona
+
+- `Arvore.raizVisivel()` devolve uma visão somente leitura dos nós; as classes internas das árvores continuam privadas.
+- `ConstrutorDesenho` tira um *retrato* da árvore: só os primeiros níveis (o resto vira triângulo), mais o caminho de uma busca, se houver. Funciona até com uma BST de 100 mil níveis, sem recursão profunda.
+- `LayoutArvore` posiciona os nós (estilo Reingold–Tilford) e `VisaoArvore` desenha e anima a diferença entre dois retratos: é assim que as rotações aparecem.
+- `arvores.gui.visual` é o visual do programa: um *look and feel* feito sobre o Metal do Java (botões, abas, campos, barras de rolagem, tabelas e ícones desenhados em código), sem nenhuma biblioteca externa. Para trocar as cores e a fonte, basta mexer em `Paleta`.
+- Tudo que não depende do Swing (retrato, layout, modelo, carga do dataset) é testado em `arvores.gui.TesteGui`, que também pinta os componentes fora da tela para conferir o visual.
 
 ---
 
@@ -77,13 +125,10 @@ Usamos metadados reais de faixas do Free Music Archive (chave: `track_id`) para 
 
 ---
 
-
----
-
 ## ⚙️ Requisitos
 
 - **Java 17 ou superior** (testado com Java 21)
-- **Python 3** com `pandas` e `matplotlib` (`pip install pandas matplotlib`) — usado apenas para preparar os dados e gerar os gráficos
+- **Python 3** com `pandas` e `matplotlib` (`pip install pandas matplotlib`) — usado apenas para preparar os dados e gerar os gráficos em PNG pela linha de comando (a interface gráfica já desenha os gráficos sozinha)
 
 ---
 
@@ -114,23 +159,39 @@ python scripts/preparar_dados.py data/fma_metadata/tracks.csv data/faixas.csv
 
 Se o script avisar de coluna faltando, ele lista as colunas existentes: ajuste o dicionário `COLUNAS` no topo de `scripts/preparar_dados.py`.
 
-### 2. Compilar e testar
+### 2. Compilar
 
 ```bash
-javac -encoding UTF-8 -d out src/arvores/*.java
+javac -encoding UTF-8 -sourcepath src -d out src/arvores/Main.java src/arvores/Benchmark.java src/arvores/TesteArvore.java
+```
+
+> O comando não usa `*`, então funciona igual no PowerShell, no cmd, no Git Bash, no Linux e no macOS (o `-sourcepath src` faz o `javac` achar sozinho as demais classes, inclusive as da interface em `src/arvores/gui`). Se os acentos aparecerem trocados no terminal, rode o Java com `java -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -cp out ...`.
+
+### 3. Abrir a interface gráfica
+
+```bash
+java -cp out arvores.Main                                      # abre a janela
+java -cp out arvores.Main data/faixas.csv 20000 embaralhado    # já abre carregando 20.000 faixas
+java -cp out arvores.Main data/faixas.csv 20000 ordenado       # pior caso da BST
+```
+
+Os argumentos são opcionais: `[csv] [quantidade] [ordenado|embaralhado]`. Para gerar um executável (no Windows e no macOS dá para abrir com duplo clique; ele procura `data/faixas.csv` perto do `.jar`):
+
+```bash
+jar --create --file arvores.jar --main-class arvores.Main -C out .
+java -jar arvores.jar
+```
+
+### 4. Testar
+
+```bash
 java -cp out arvores.TesteArvore
+java -cp out arvores.gui.TesteGui
 ```
 
-> Dicas para Windows: se o PowerShell não expandir o `*.java`, use `javac -encoding UTF-8 -d out (Get-ChildItem src/arvores/*.java)`. Se os acentos aparecerem trocados no terminal, rode o Java com `java -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -cp out ...`.
+Os testes também rodam, com o resultado ao vivo, na aba **Testes** da interface.
 
-### 3. Demonstração interativa
-
-```bash
-java -cp out arvores.Main data/faixas.csv 20000 embaralhado
-java -cp out arvores.Main data/faixas.csv 20000 ordenado      # pior caso da BST
-```
-
-### 4. Executar o benchmark
+### 5. Executar o benchmark
 
 ```bash
 java -cp out arvores.Benchmark
@@ -149,7 +210,9 @@ Parâmetros opcionais: `java -cp out arvores.Benchmark [csv] [N] [repeticoes] [p
 
 O benchmark grava em `results/tabelas/`: `desempenho.csv`, `altura_incremental.csv` e `ambiente.txt` (versão do Java, sistema e processadores, para a seção "Ambiente de teste"). Na BST com chaves ordenadas as operações são lentas (O(n²) no total): espere alguns minutos. Para um teste rápido: `java -cp out arvores.Benchmark data/faixas.csv 10000 2`.
 
-### 5. Gerar os gráficos
+O mesmo benchmark roda na aba **Benchmark** da interface, que mostra os gráficos e as tabelas sem precisar do Python e só grava arquivos se você pedir (*Exportar CSVs*).
+
+### 6. Gerar os gráficos
 
 ```bash
 python scripts/gerar_graficos.py
@@ -157,8 +220,6 @@ python scripts/gerar_graficos.py
 
 Grava em `results/graficos/`: `desempenho_tempo.png`, `desempenho_comparacoes.png` e `altura.png` (altura × elementos inseridos, medida a cada 1.000 inserções até o tamanho total do dataset), além de `results/tabelas/resumo_para_readme.md` com as tabelas prontas para colar na seção [Resultados](#-resultados).
 (Caso as imagens não consigam ser visualizadas dentro da IDE, as imagens vão estar salvas dentro das pastas do projeto em seu computador)
-
----
 
 ---
 
@@ -243,13 +304,13 @@ Resultados do benchmark rodado no ambiente descrito acima. Os tempos são o **to
 ## ✅ Testes
 
 ```bash
-javac -encoding UTF-8 -d out src/arvores/*.java
 java -cp out arvores.TesteArvore
+java -cp out arvores.gui.TesteGui
 ```
 
-Os testes (804.567 verificações aprovadas) comparam cada árvore com o `TreeMap` do Java em milhares de operações aleatórias (inserir, remover e buscar) e chamam `validar()` depois de cada operação. Também conferem os três percursos, o contador de comparações, chaves repetidas, inserção em ordem crescente e decrescente e o limite de altura logarítmica das árvores balanceadas.
+`TesteArvore` (1.193.306 verificações aprovadas) compara cada árvore com o `TreeMap` do Java em milhares de operações aleatórias (inserir, remover e buscar) e chama `validar()` depois de cada operação. Também confere os três percursos, o contador de comparações, chaves repetidas, inserção em ordem crescente e decrescente e o limite de altura logarítmica das árvores balanceadas, e que `raizVisivel()` espelha a árvore (mesmas chaves, dados, percursos, cores e fatores de balanceamento).
 
----
+`TesteGui` (63.371 verificações aprovadas) testa a interface sem abrir janela: o retrato das árvores (níveis resumidos, caminho da busca, subárvore em foco, layout), as operações aplicadas às três árvores (o nº de comparações de cada árvore bate com o caminho calculado pela interface), a carga do dataset com cancelamento, o benchmark e o visual dos componentes (pintados fora da tela).
 
 ---
 
